@@ -1,0 +1,119 @@
+<title>Voice-profile corpus — cost scenarios</title>
+<style>
+:root{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--acc:#7c3aed;--good:#15803d;--bad:#b91c1c;--warn:#a16207;--card:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--card:#1b1a22}}
+:root[data-theme=dark]{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--card:#1b1a22}
+:root[data-theme=light]{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--acc:#7c3aed;--good:#15803d;--bad:#b91c1c;--warn:#a16207;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;padding:0 20px 70px}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-size:30px;margin:42px 0 6px;letter-spacing:-.02em}
+h2{font-size:22px;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+.sub{color:var(--mut);font-size:15px;margin:0 0 24px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;overflow-x:auto}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mut)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+td.ok{color:var(--good);font-weight:600} td.warn{color:var(--warn);font-weight:600}
+td.bad{color:var(--bad);font-weight:700}
+.sm{font-size:12px;color:var(--mut)}
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:11px;padding:16px 19px;margin:16px 0}
+.note.w{border-left-color:var(--warn)} .note.b{border-left-color:var(--bad)}
+.note.g{border-left-color:var(--good)}
+.big{font-size:17px}
+code{background:rgba(124,58,237,.1);padding:1px 5px;border-radius:4px;font:12.5px ui-monospace,monospace}
+ul{margin:10px 0;padding-left:22px} li{margin:6px 0}
+</style>
+<div class=wrap>
+<h1>Voice-profile corpus — what each build actually costs</h1>
+<p class=sub>Measured constants, three inference engines, eight build scenarios, against both
+compute budgets. Profile B (the Mediathek merge) is dropped — <b>standard profile only</b>.</p>
+
+<div class="note g"><b class=big>Read this first.</b>
+Every number below rests on measurements, not estimates: <b>2,126 generations per GPU-hour</b> and
+a <b>8.83 s mean clip</b> from the 323,200-generation demo; <b>288 core-hours per node-hour</b> and
+4 GPUs per node read straight off Slurm accounting; the engine speeds from the SGLang-Omni
+benchmark; and the quality-versus-N figures from an exact order-statistic analysis of real
+200-candidate pools.
+<br><br>
+<b>The single biggest lever is not N — it is the inference engine.</b> The current pipeline runs at
+5.2× realtime per GPU. Plain pipelined decode in the same stack reaches 18.8×, and SGLang-Omni
+31.2×. That is a 3.6–6× cost difference on every row of the table.</div>
+
+<h2>The condition matrix — now 832 groups per voice</h2>
+<table>
+<tr><th>block</th><th>conditions</th><th class=n>groups</th></tr>
+<tr><td>Emotions</td><td>40 × {intense, moderate} × {free, contained} × {EN, DE}</td><td class=n>320</td></tr>
+<tr><td>VoiceNet dimensions</td><td>57 × 4 levels × {EN, DE}</td><td class=n>456</td></tr>
+<tr><td>Edge cases</td><td>screams, groans, shivers, laughter, whimpering, crying × {EN, DE}</td><td class=n>28</td></tr>
+<tr><td>Sports commentator</td><td>× {EN, DE}</td><td class=n>2</td></tr>
+<tr><td>Explicitness</td><td>× {EN, DE}, behind the age safety gate</td><td class=n>2</td></tr>
+<tr><td><b>Character clusters</b> <span class=sm>NEW</span></td>
+<td>12 character-cluster LoRAs × {EN, DE} — each also rendered a second time through Chatterbox
+voice conversion, so the two can be compared later</td><td class=n><b>24</b></td></tr>
+<tr><td colspan=2><b>total per voice</b></td><td class=n><b>832</b></td></tr>
+</table>
+
+<h2>What N buys you</h2>
+<p>Share of the achievable best-of-200 gain, from the exact order-statistic analysis:</p>
+<table><tr><th class=n>N</th><th class=n>reward</th><th class=n>speaker sim</th>
+<th class=n>genuineness</th><th class=n>emotion</th></tr><tr><td class=n>8</td><td class=n>50%</td><td class=n>64%</td><td class=n>36%</td><td class=n>38%</td></tr><tr><td class=n>16</td><td class=n>63%</td><td class=n>74%</td><td class=n>50%</td><td class=n>50%</td></tr><tr><td class=n>32</td><td class=n>75%</td><td class=n>83%</td><td class=n>63%</td><td class=n>64%</td></tr><tr><td class=n>64</td><td class=n>86%</td><td class=n>90%</td><td class=n>77%</td><td class=n>77%</td></tr><tr><td class=n>128</td><td class=n>95%</td><td class=n>96%</td><td class=n>91%</td><td class=n>91%</td></tr><tr><td class=n>200</td><td class=n>100%</td><td class=n>100%</td><td class=n>100%</td><td class=n>100%</td></tr></table>
+<p class=sub><b>Speaker similarity saturates first</b> — 74 % of the achievable gain already at
+N=16, 83 % at 32. Genuineness and emotion strength keep climbing all the way to 200, so they are
+what larger N actually buys.</p>
+
+<h2>The budgets</h2>
+<table><tr><th>project</th><th class=n>total core-h</th><th class=n>remaining</th>
+<th class=n>% left</th><th>expires</th></tr><tr><td><b>REFORMO</b></td><td class=n>201,600,000</td><td class=n>68,709,721</td><td class=n>34.1%</td><td>2026-12-31</td></tr><tr><td><b>LAIONIZE</b></td><td class=n>41,660,000</td><td class=n>37,569,231</td><td class=n>90.2%</td><td>2027-04-30</td></tr></table>
+<div class="note w"><b>REFORMO expires 2026-12-31 with 68.7 M core-hours unspent.</b> Using it all
+would need ~14.5 M core-h/month against a recent run-rate of ~6.0 M. On the current trajectory
+roughly <b>40 million core-hours simply expire</b>. Spend REFORMO first; keep LAIONIZE, which runs
+four months longer and is 90 % untouched, as the reserve.</div>
+
+<h2>Scenarios</h2>
+<table>
+<tr><th>scenario</th><th>engine</th><th class=n>GPU-h</th><th class=n>core-h</th>
+<th class=n>% REFORMO left</th><th class=n>% LAIONIZE left</th></tr>
+<tr><td rowspan=3><b>S1</b><br>6,000 × N=32 (flat)<div class=sm>159,744,000 clips · 391,817 h audio</div><div class=sm>reward: N=32: 75%</div></td><td>current pipeline</td><td class=n>75,649</td><td class=n>5,446,752</td><td class='n ok'>7.9%</td><td class='n warn'>14.5%</td></tr><tr><td>pipelined decode (transformers)</td><td class=n>21,141</td><td class=n>1,522,174</td><td class='n ok'>2.2%</td><td class='n ok'>4.1%</td></tr><tr><td>SGLang-Omni @ conc 128</td><td class=n>12,858</td><td class=n>925,792</td><td class='n ok'>1.3%</td><td class='n ok'>2.5%</td></tr><tr><td rowspan=3><b>S2</b><br>5,000 × N=32 + 1,000 × N=64<div class=sm>186,368,000 clips · 457,119 h audio</div><div class=sm>reward: N=32: 75% / N=64: 86%</div></td><td>current pipeline</td><td class=n>88,208</td><td class=n>6,350,944</td><td class='n ok'>9.2%</td><td class='n warn'>16.9%</td></tr><tr><td>pipelined decode (transformers)</td><td class=n>24,615</td><td class=n>1,772,270</td><td class='n ok'>2.6%</td><td class='n ok'>4.7%</td></tr><tr><td>SGLang-Omni @ conc 128</td><td class=n>14,951</td><td class=n>1,076,491</td><td class='n ok'>1.6%</td><td class='n ok'>2.9%</td></tr><tr><td rowspan=3><b>S3</b><br>5,000 × N=16 only<div class=sm>66,560,000 clips · 163,257 h audio</div><div class=sm>reward: N=16: 63%</div></td><td>current pipeline</td><td class=n>31,646</td><td class=n>2,278,480</td><td class='n ok'>3.3%</td><td class='n ok'>6.1%</td></tr><tr><td>pipelined decode (transformers)</td><td class=n>8,934</td><td class=n>643,239</td><td class='n ok'>0.9%</td><td class='n ok'>1.7%</td></tr><tr><td>SGLang-Omni @ conc 128</td><td class=n>5,483</td><td class=n>394,747</td><td class='n ok'>0.6%</td><td class='n ok'>1.1%</td></tr><tr><td rowspan=3><b>S4</b><br>5,000 × N=16 + 1,000 × N=64<div class=sm>119,808,000 clips · 293,862 h audio</div><div class=sm>reward: N=16: 63% / N=64: 86%</div></td><td>current pipeline</td><td class=n>56,812</td><td class=n>4,090,464</td><td class='n ok'>6.0%</td><td class='n warn'>10.9%</td></tr><tr><td>pipelined decode (transformers)</td><td class=n>15,931</td><td class=n>1,147,030</td><td class='n ok'>1.7%</td><td class='n ok'>3.1%</td></tr><tr><td>SGLang-Omni @ conc 128</td><td class=n>9,719</td><td class=n>699,744</td><td class='n ok'>1.0%</td><td class='n ok'>1.9%</td></tr><tr><td rowspan=3><b>S5</b><br>5,000 × N=16 + 900 × N=32 + 100 × N=128<div class=sm>101,171,200 clips · 248,150 h audio</div><div class=sm>reward: N=16: 63% / N=32: 75% / N=128: 95%</div></td><td>current pipeline</td><td class=n>48,021</td><td class=n>3,457,530</td><td class='n ok'>5.0%</td><td class='n ok'>9.2%</td></tr><tr><td>pipelined decode (transformers)</td><td class=n>13,499</td><td class=n>971,964</td><td class='n ok'>1.4%</td><td class='n ok'>2.6%</td></tr><tr><td>SGLang-Omni @ conc 128</td><td class=n>8,254</td><td class=n>594,255</td><td class='n ok'>0.9%</td><td class='n ok'>1.6%</td></tr><tr><td rowspan=3><b>S6</b><br>5,000 × N=16 + 900 × N=32 + 100 × N=250<div class=sm>111,321,600 clips · 273,047 h audio</div><div class=sm>reward: N=16: 63% / N=32: 75% / N=250: 100%</div></td><td>current pipeline</td><td class=n>52,809</td><td class=n>3,802,253</td><td class='n ok'>5.5%</td><td class='n warn'>10.1%</td></tr><tr><td>pipelined decode (transformers)</td><td class=n>14,824</td><td class=n>1,067,312</td><td class='n ok'>1.6%</td><td class='n ok'>2.8%</td></tr><tr><td>SGLang-Omni @ conc 128</td><td class=n>9,052</td><td class=n>651,709</td><td class='n ok'>0.9%</td><td class='n ok'>1.7%</td></tr><tr><td rowspan=3><b>S7</b><br>5,000 × N=16 + 900 × N=32 + 100 × N=500<div class=sm>132,121,600 clips · 324,065 h audio</div><div class=sm>reward: N=16: 63% / N=32: 75% / N=500: 100%</div></td><td>current pipeline</td><td class=n>62,620</td><td class=n>4,508,653</td><td class='n ok'>6.6%</td><td class='n warn'>12.0%</td></tr><tr><td>pipelined decode (transformers)</td><td class=n>17,537</td><td class=n>1,262,700</td><td class='n ok'>1.8%</td><td class='n ok'>3.4%</td></tr><tr><td>SGLang-Omni @ conc 128</td><td class=n>10,687</td><td class=n>769,442</td><td class='n ok'>1.1%</td><td class='n ok'>2.0%</td></tr><tr><td rowspan=3><b>S8</b><br>6,000 × N=128 (max quality)<div class=sm>638,976,000 clips · 1,567,266 h audio</div><div class=sm>reward: N=128: 95%</div></td><td>current pipeline</td><td class=n>301,697</td><td class=n>21,722,208</td><td class='n warn'>31.6%</td><td class='n bad'>57.8%</td></tr><tr><td>pipelined decode (transformers)</td><td class=n>83,665</td><td class=n>6,023,896</td><td class='n ok'>8.8%</td><td class='n warn'>16.0%</td></tr><tr><td>SGLang-Omni @ conc 128</td><td class=n>50,533</td><td class=n>3,638,368</td><td class='n ok'>5.3%</td><td class='n ok'>9.7%</td></tr>
+</table>
+
+<div class="note"><b>How to read it.</b> Green is under 10 % of that budget's remainder, amber under
+40 %, red above. Note that with the current engine several builds are uncomfortable, while with
+pipelined decode almost everything is affordable — <b>the engine choice moves more than the
+scenario choice does</b>.</div>
+
+<h2>Recommendation</h2>
+<div class="note g">
+<ol>
+<li><b>Port pipelined decode first.</b> It is the same transformers stack, LoRA adapters keep
+working, and it is a measured 3.6×. Everything else is downstream of this.</li>
+<li><b>Then S5</b> (5,000×16 + 900×32 + 100×128). Broad coverage where speaker similarity is
+already 74 % saturated, a solid middle tier, and a 100-voice high-quality core for the work that
+needs it — at a fraction of a flat build.</li>
+<li><b>Treat SGLang-Omni as a follow-up, not a plan.</b> It is 6× faster in the benchmark but
+<b>nothing has yet shown it can hot-swap LoRA adapters at arbitrary merge strength</b>, which the
+entire condition matrix depends on. Confirm that before counting on it.</li>
+<li><b>Always pack 4 GPUs per node.</b> Slurm bills the whole node either way; one GPU per node
+quadruples every figure above.</li>
+</ol>
+</div>
+
+<h2>Assumptions and where they are weak</h2>
+<div class="note b">
+<ul>
+<li><b>The engine speeds are not apples-to-apples.</b> The benchmark ran different clip lengths,
+different languages and no director instruction. The doc's own honest number is 1.47× SGLang over
+pipelined transformers; the 5.2× baseline is ours, measured on the real workload with scoring
+included. Treat the middle column as solid and the right-hand column as indicative.</li>
+<li><b>Voice conversion for the character groups is costed at 2.5 s per clip for the top-3 only</b>
+(~0.05 GPU-h/voice). Converting every candidate instead would add roughly 0.5 GPU-h per voice.</li>
+<li><b>Quality fractions come from one voice's 200-candidate pools</b> (832 groups). Group-to-group
+variance is real; treat them as central estimates.</li>
+<li><b>Scoring is 4.8 % of the loop</b> and is folded into the 2,126 gen/GPU-h figure. A faster
+generator makes scoring a proportionally larger share, so the 18.8×/31.2× rows are slightly
+optimistic — the scoring stage does not speed up.</li>
+<li><b>No listener study.</b> "Quality" throughout is the automatic sensor stack, which agrees with
+a human at roughly ρ ≈ +0.21 on spoken material.</li>
+</ul>
+</div>
+</div>

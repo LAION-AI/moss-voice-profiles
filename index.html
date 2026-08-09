@@ -42,6 +42,9 @@ metadata schema, safety gate, storage layout and compute estimates.</span></a>
 <a class=c href="demo_grid.html"><b>Demo grid (listen) →</b>
 <span>808 conditions for one voice, generated twice — standard settings versus a 25 % Mediathek
 merge — side by side with the original reference audio. 1,617 clips.</span></a>
+<a class=c href="costs.html"><b>Cost scenarios →</b>
+<span>Eight build plans × three inference engines, priced against both compute budgets — including
+the 24 new character-cluster groups. The engine choice moves cost more than the plan does.</span></a>
 <a class=c href="protocol.html"><b>Execution protocol →</b>
 <span>Exactly what was run: every step, LoRA, prompt and setting, with the measured result for
 each dimension. Written to support a paper.</span></a>
@@ -66,7 +69,9 @@ is what a "group" here is.</p>
 <tr><td>Edge cases</td><td>screams, groans, shivers, laughter, whimpering, crying × {EN, DE}</td><td class=n>28</td></tr>
 <tr><td>Sports commentator</td><td>× {EN, DE}</td><td class=n>2</td></tr>
 <tr><td>Explicitness</td><td>× {EN, DE}, subject to an age safety gate</td><td class=n>2</td></tr>
-<tr><td colspan=2><b>total per voice</b></td><td class=n><b>808</b></td></tr>
+<tr><td><b>Character clusters</b></td><td>12 character-cluster LoRAs × {EN, DE}, each also
+rendered through Chatterbox voice conversion for comparison</td><td class=n><b>24</b></td></tr>
+<tr><td colspan=2><b>total per voice</b></td><td class=n><b>832</b></td></tr>
 </table>
 <p>Every condition uses the measured best practice for that specific emotion or dimension — the
 right adapter at the right merge strength with the right prompt phrasing. <b>English and German
