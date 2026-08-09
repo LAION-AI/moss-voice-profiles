@@ -40,8 +40,8 @@ variants — in English <b>and</b> German, from the same sentence.</p>
 at which merge strength for which emotion and dimension, prompt templates, ranking formulas,
 metadata schema, safety gate, storage layout and compute estimates.</span></a>
 <a class=c href="demo_grid.html"><b>Demo grid (listen) →</b>
-<span>808 conditions for one voice, generated twice — standard settings versus a 25 % Mediathek
-merge — side by side with the original reference audio. 1,617 clips.</span></a>
+<span>Every condition for one voice, side by side with the original reference audio. 1,617 clips,
+audio served directly from this repo.</span></a>
 <a class=c href="costs.html"><b>Cost scenarios →</b>
 <span>Eight build plans × three inference engines, priced against both compute budgets — including
 the 24 new character-cluster groups. The engine choice moves cost more than the plan does.</span></a>
@@ -61,7 +61,7 @@ translation model that keeps the speaker and the emotional level</b>. To train t
 same meaning, spoken by the same voice, at the same emotional intensity, in both languages. That
 is what a "group" here is.</p>
 
-<h2>The condition matrix — 808 groups per voice</h2>
+<h2>The condition matrix — 832 groups per voice</h2>
 <table>
 <tr><th>block</th><th>conditions</th><th class=n>groups</th></tr>
 <tr><td>Emotions</td><td>40 emotions × {intense, moderate} × {free-flowing, contained} × {EN, DE}</td><td class=n>320</td></tr>
@@ -92,17 +92,24 @@ cosine to the reference, Parakeet-v3 word-level timestamps, a procedural caption
 component that produced its rank. Stored as WebDataset tar + parquet, so re-ranking never requires
 regenerating anything.</p>
 
-<h2>Scaling</h2>
+<h2>Scaling — and the thing that dominates it</h2>
+<div class="note b"><b class=big>The inference engine matters more than the build plan.</b>
+The pipeline as run reaches <b>5.2× realtime per GPU</b>. Plain <b>pipelined decode</b> in the same
+transformers stack is measured at <b>18.8×</b>, and SGLang-Omni at <b>31.2×</b>. That is a
+<b>3.6–6× cost difference on every plan below</b> — far larger than any choice of candidate count.
+<br><br>
+An earlier version of this page said 6,000 voices at the full matrix "is not feasible". With
+pipelined decode it costs about <b>2 % of one compute budget</b>. That claim was wrong because it
+assumed the current throughput was near the ceiling; it is not.</div>
 <table>
-<tr><th>voices</th><th class=n>GPU-hours</th><th class=n>storage</th></tr>
-<tr><td>100</td><td class=n>1,226</td><td class=n>~0.3 TB</td></tr>
-<tr><td>1,000</td><td class=n>12,260</td><td class=n>~2.8 TB</td></tr>
-<tr><td>6,000</td><td class=n>73,600</td><td class=n>~17 TB</td></tr>
+<tr><th>plan (832 groups/voice)</th><th class=n>GPU-h, pipelined</th><th class=n>% REFORMO left</th></tr>
+<tr><td>5,000 × N=16</td><td class=n>8,934</td><td class=n>0.9 %</td></tr>
+<tr><td>5,000 × N=16 + 900 × N=32 + 100 × N=128</td><td class=n>13,499</td><td class=n>1.4 %</td></tr>
+<tr><td>6,000 × N=32 (flat)</td><td class=n>21,141</td><td class=n>2.2 %</td></tr>
+<tr><td>6,000 × N=128 (max quality)</td><td class=n>83,665</td><td class=n>8.8 %</td></tr>
 </table>
-<div class="note w"><b>6,000 voices at the full matrix is not feasible as a single run</b> —
-73,600 GPU-hours is 288 hours on 256 GPUs. The VoiceNet block is 56 % of the matrix and 57 % of
-the cost, so it is the lever. The proposal is: full matrix on 100 stratified voices, a reduced
-270-group matrix on 1,000, and the emotion block only at 6,000.</div>
+<p><b>→ <a href="costs.html">Full cost scenarios</a></b> — eight plans × three engines, against
+both budgets, with the assumptions spelled out.</p>
 
 <h2>Findings</h2>
 
