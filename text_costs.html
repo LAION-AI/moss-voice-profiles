@@ -1,0 +1,117 @@
+<title>What would it cost to WRITE the texts instead of borrowing them?</title>
+<style>
+:root{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--acc:#7c3aed;--good:#15803d;--bad:#b91c1c;--warn:#a16207;--card:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--card:#1b1a22}}
+:root[data-theme=dark]{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--card:#1b1a22}
+:root[data-theme=light]{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--acc:#7c3aed;--good:#15803d;--bad:#b91c1c;--warn:#a16207;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;padding:0 20px 70px}
+.wrap{max-width:1000px;margin:0 auto}
+h1{font-size:29px;margin:40px 0 6px;letter-spacing:-.02em}
+h2{font-size:22px;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+.sub{color:var(--mut);font-size:14.5px;margin:0 0 24px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;overflow-x:auto}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mut)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+td.ok{color:var(--good);font-weight:700} td.warn{color:var(--warn);font-weight:600}
+td.bad{color:var(--bad);font-weight:700}
+.sm{font-size:12px;color:var(--mut)}
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:11px;padding:15px 18px;margin:16px 0}
+.note.g{border-left-color:var(--good)} .note.w{border-left-color:var(--warn)}
+.note.b{border-left-color:var(--bad)}
+.big{font-size:17px}
+code{background:rgba(124,58,237,.1);padding:1px 5px;border-radius:4px;font:12.5px ui-monospace,monospace}
+ul{margin:9px 0;padding-left:22px} li{margin:5px 0}
+</style>
+<div class=wrap>
+<h1>What would it cost to <i>write</i> the texts instead of borrowing them?</h1>
+<p class=sub>Measured throughput for Gemma-4-E4B on this cluster, extrapolated to the full corpus</p>
+
+<div class=note><b class=big>The problem this would solve.</b>
+Right now every sentence comes from a translation corpus, so a group asking for
+<b>"intense, freely expressed bitterness"</b> is handed a neutral sentence about a gym membership
+or a court ruling. The actor is given nothing to be bitter <i>about</i>.
+<br><br>
+That is not a hypothetical complaint — it is measurable. Across 3,000 clips, <b>Bitterness never
+exceeded 0.02</b> on the emotion head and the generations collapsed to a neutral "Interest"
+reading voice; Infatuation and Fear behaved the same way. Contempt, which happened to be paired
+with a sentence containing an actual judgement, reached <b>0.661</b>.
+<br><br>
+So: write each line to fit its condition. This page prices that.</div>
+
+<h2>Measured throughput</h2>
+<p>Gemma-4-E4B-it on one GH200, plain <code>transformers</code>, batched, generating lines of the
+real prompt shape and length (30–50 words, ~110 new tokens):</p>
+<table><tr><th class=n>batch</th><th class=n>tokens/s</th><th class=n>lines/s</th><th class=n>peak VRAM</th></tr><tr><td class=n>32</td><td class=n>379</td><td class=n>6.8</td><td class=n>16.7 GB</td></tr><tr><td class=n>64</td><td class=n>663</td><td class=n>11.6</td><td class=n>17.5 GB</td></tr><tr><td class=n>128</td><td class=n>1299</td><td class=n>22.8</td><td class=n>18.6 GB</td></tr></table>
+<p class=sub>Scaling is close to linear across this range and VRAM barely moves (16.7 → 18.6 GB),
+so batch 128 is not near any limit — larger batches would very likely go further. Batch 128 is
+used as the conservative baseline below.</p>
+
+<h2>How many lines are needed</h2>
+<p>A voice needs <b>125 distinct texts</b>, not 832: the four intensity/containment conditions
+of one emotion deliberately share a sentence, and English and German are translations of the same
+line. So it is 125 slots × 2 languages = <b>250 lines per text set</b>.</p>
+<p>The open choice is how many <i>distinct sets</i> to make. One set shared by all 6,000 voices is
+cheapest but means every voice says the same words; a unique set per voice is the richest corpus.</p>
+
+<h2>The cost</h2>
+<table>
+<tr><th>scale</th><th>model</th><th>engine</th><th class=n>GPU-h</th><th class=n>core-h</th>
+<th class=n>% REFORMO left</th></tr>
+<tr><td rowspan=9><b>one shared text set for all voices</b><div class=sm>250 lines</div></td><td>Gemma-4-E4B-it (MEASURED)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>0.0</td><td class=n>0</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-4-E4B-it (MEASURED)</td><td>vLLM (assumed 6×)</td><td class=n>0.0</td><td class=n>0</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-4-E4B-it (MEASURED)</td><td>SGLang (assumed 8×)</td><td class=n>0.0</td><td class=n>0</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>0.0</td><td class=n>1</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>vLLM (assumed 6×)</td><td class=n>0.0</td><td class=n>0</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>SGLang (assumed 8×)</td><td class=n>0.0</td><td class=n>0</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>0.0</td><td class=n>0</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>vLLM (assumed 6×)</td><td class=n>0.0</td><td class=n>0</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>SGLang (assumed 8×)</td><td class=n>0.0</td><td class=n>0</td><td class='n ok'>0.000 %</td></tr><tr><td rowspan=9><b>100 distinct sets</b><div class=sm>25,000 lines</div></td><td>Gemma-4-E4B-it (MEASURED)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>0.3</td><td class=n>22</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-4-E4B-it (MEASURED)</td><td>vLLM (assumed 6×)</td><td class=n>0.1</td><td class=n>4</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-4-E4B-it (MEASURED)</td><td>SGLang (assumed 8×)</td><td class=n>0.0</td><td class=n>3</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>0.9</td><td class=n>66</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>vLLM (assumed 6×)</td><td class=n>0.2</td><td class=n>11</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>SGLang (assumed 8×)</td><td class=n>0.1</td><td class=n>8</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>0.5</td><td class=n>37</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>vLLM (assumed 6×)</td><td class=n>0.1</td><td class=n>6</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>SGLang (assumed 8×)</td><td class=n>0.1</td><td class=n>5</td><td class='n ok'>0.000 %</td></tr><tr><td rowspan=9><b>1,000 distinct sets</b><div class=sm>250,000 lines</div></td><td>Gemma-4-E4B-it (MEASURED)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>3.0</td><td class=n>219</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-4-E4B-it (MEASURED)</td><td>vLLM (assumed 6×)</td><td class=n>0.5</td><td class=n>37</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-4-E4B-it (MEASURED)</td><td>SGLang (assumed 8×)</td><td class=n>0.4</td><td class=n>27</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>9.1</td><td class=n>658</td><td class='n ok'>0.001 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>vLLM (assumed 6×)</td><td class=n>1.5</td><td class=n>110</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>SGLang (assumed 8×)</td><td class=n>1.1</td><td class=n>82</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>5.1</td><td class=n>365</td><td class='n ok'>0.001 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>vLLM (assumed 6×)</td><td class=n>0.8</td><td class=n>61</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>SGLang (assumed 8×)</td><td class=n>0.6</td><td class=n>46</td><td class='n ok'>0.000 %</td></tr><tr><td rowspan=9><b>6,000 — a unique set per voice</b><div class=sm>1,500,000 lines</div></td><td>Gemma-4-E4B-it (MEASURED)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>18.3</td><td class=n>1,316</td><td class='n ok'>0.002 %</td></tr><tr><td>Gemma-4-E4B-it (MEASURED)</td><td>vLLM (assumed 6×)</td><td class=n>3.0</td><td class=n>219</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-4-E4B-it (MEASURED)</td><td>SGLang (assumed 8×)</td><td class=n>2.3</td><td class=n>164</td><td class='n ok'>0.000 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>54.8</td><td class=n>3,947</td><td class='n ok'>0.006 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>vLLM (assumed 6×)</td><td class=n>9.1</td><td class=n>658</td><td class='n ok'>0.001 %</td></tr><tr><td>Gemma-3-12B bf16 (assumed ⅓ speed)</td><td>SGLang (assumed 8×)</td><td class=n>6.9</td><td class=n>493</td><td class='n ok'>0.001 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>transformers, batch 128 (MEASURED)</td><td class=n>30.5</td><td class=n>2,193</td><td class='n ok'>0.003 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>vLLM (assumed 6×)</td><td class=n>5.1</td><td class=n>365</td><td class='n ok'>0.001 %</td></tr><tr><td>Gemma-3-12B 4-bit quantised (assumed 0.6×)</td><td>SGLang (assumed 8×)</td><td class=n>3.8</td><td class=n>274</td><td class='n ok'>0.000 %</td></tr>
+</table>
+
+<div class="note g"><b class=big>The answer: it is negligible.</b>
+Even the most extravagant option — a <b>unique text set for every one of the 6,000 voices</b>,
+1.5 million written lines — costs about <b>3 GPU-hours</b> under the vLLM
+assumption. The speech generation for the same corpus costs <b>100,253 GPU-hours</b>.
+<br><br>
+Writing the texts is <b>0.00 %</b> of what it costs to speak them. Even with a 12B model
+at bf16 and no serving engine at all, it stays a rounding error. <b>There is no cost argument for
+reusing borrowed sentences.</b></div>
+
+<h2>Which model</h2>
+<table><tr><th>option</th><th>speed vs measured</th><th>note</th></tr>
+<tr><td><b>Gemma-4-E4B-it</b></td><td class=n>1.0× (measured)</td>
+<td>Already cached here and already used for the DramaBox prompt generation, so it is the known
+quantity. ~4 B active parameters.</td></tr>
+<tr><td><b>Gemma-3-12B, bf16</b></td><td class=n>~⅓ (assumed)</td>
+<td>Roughly three times the active parameters. Better writing, and at these volumes the extra cost
+is still irrelevant.</td></tr>
+<tr><td><b>Gemma-3-12B, 4-bit</b></td><td class=n>~0.6× (assumed)</td>
+<td>Quantisation mainly buys VRAM headroom, which lets the batch grow — that is where the real
+gain would come from, not from the arithmetic itself. <b>Not worth the quality risk here</b>, since
+cost is not the binding constraint.</td></tr>
+</table>
+
+<div class="note w"><b>What is measured and what is not.</b>
+<ul>
+<li><b>Measured</b>: the three throughput rows, on this hardware, with this prompt shape, in
+<code>transformers</code>.</li>
+<li><b>Assumed</b>: the vLLM (6×) and SGLang (8×) multipliers — <b>neither engine is installed
+here</b>, and these are the weakest numbers on the page. Given the conclusion is "negligible under
+every assumption", the multiplier does not change the decision; do not reuse it elsewhere without
+measuring.</li>
+<li><b>Assumed</b>: the 12B speed ratios, scaled from parameter count rather than benchmarked.</li>
+<li>Not costed: any quality-control pass over the generated lines. If every line is screened by a
+second model, roughly double the numbers — and it stays negligible.</li>
+</ul></div>
+
+<h2>Recommendation</h2>
+<div class="note g"><ol>
+<li><b>Write the texts.</b> The cost argument for borrowing them does not survive contact with the
+numbers, and the borrowed sentences are a plausible cause of the emotion collapse.</li>
+<li><b>Start with 1,000 distinct sets</b> (250,000 lines, well under a GPU-hour with a
+serving engine) and sample them across the 6,000 voices. That already removes the "every voice
+says the same thing" problem; a unique set per voice can follow if it proves useful.</li>
+<li><b>Test the hypothesis first, cheaply.</b> Regenerate only the emotions that currently collapse
+— Bitterness, Infatuation, Fear, Contentment — with written-to-fit lines, and check whether the
+emotion head moves. That is a few GPU-minutes of text and a couple of GPU-hours of speech, and it
+settles whether the text is really the limiter before anything is rebuilt at scale.</li>
+</ol></div>
+
+<p class=sub style="margin-top:28px">Throughput measured 1299 tok/s at batch 128 on a
+single GH200; core-hours at 288 per node-hour and 4 GPUs per node; REFORMO remainder
+68,709,721 core-h.</p>
+</div>
