@@ -1,0 +1,156 @@
+<title>MOSS voice profiles — conditioned speech corpus</title>
+<style>
+:root{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--acc:#7c3aed;--good:#15803d;--bad:#b91c1c;--warn:#a16207;--card:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--card:#1b1a22}}
+:root[data-theme=dark]{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--card:#1b1a22}
+:root[data-theme=light]{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--acc:#7c3aed;--good:#15803d;--bad:#b91c1c;--warn:#a16207;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;padding:0 20px 70px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:31px;margin:44px 0 6px;letter-spacing:-.02em}
+h2{font-size:22px;margin:46px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+.sub{color:var(--mut);font-size:15px;margin:0 0 28px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14.5px;display:block;overflow-x:auto}
+th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--mut)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.cards{display:flex;gap:14px;flex-wrap:wrap;margin:20px 0}
+.c{flex:1;min-width:250px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;display:block}
+.c:hover{border-color:var(--acc)}
+.c b{display:block;font-size:17px;color:var(--acc);margin-bottom:5px}
+.c span{font-size:14px;color:var(--mut)}
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:11px;padding:16px 19px;margin:18px 0}
+.note.w{border-left-color:var(--warn)}
+.note.b{border-left-color:var(--bad)}
+.big{font-size:17px}
+code{background:rgba(124,58,237,.1);padding:1px 5px;border-radius:4px;font:13px ui-monospace,monospace}
+ul{margin:10px 0;padding-left:22px}li{margin:6px 0}
+a{color:var(--acc)}
+</style>
+<div class=wrap>
+
+<h1>MOSS voice profiles</h1>
+<p class=sub>A conditioned-speech corpus generator: for one reference voice, every emotion at four
+intensity/containment settings, every VoiceNet dimension at four levels, edge cases and style
+variants — in English <b>and</b> German, from the same sentence.</p>
+
+<div class=cards>
+<a class=c href="manual.html"><b>Design manual →</b>
+<span>What this is, why, and every detail needed to reproduce it: the condition matrix, which LoRA
+at which merge strength for which emotion and dimension, prompt templates, ranking formulas,
+metadata schema, safety gate, storage layout and compute estimates.</span></a>
+<a class=c href="demo_grid.html"><b>Demo grid (listen) →</b>
+<span>808 conditions for one voice, generated twice — standard settings versus a 25 % Mediathek
+merge — side by side with the original reference audio. 1,617 clips.</span></a>
+<a class=c href="protocol.html"><b>Execution protocol →</b>
+<span>Exactly what was run: every step, LoRA, prompt and setting, with the measured result for
+each dimension. Written to support a paper.</span></a>
+</div>
+
+<h2>What it is, in plain language</h2>
+<p>A speech model can be asked to say the same sentence <i>angrily</i>, <i>quietly angry</i>,
+<i>softly amused</i>, <i>very fast</i>, <i>with a lot of vocal fry</i>, and so on. This project
+does that <b>systematically</b>: for a single voice it produces every combination of a large
+condition grid, keeps 32 candidates of each (200 in this demo), scores them all, and stores
+everything.</p>
+<p>The reason for the German-and-English pairing is the eventual goal: <b>a speech-to-speech
+translation model that keeps the speaker and the emotional level</b>. To train that you need the
+same meaning, spoken by the same voice, at the same emotional intensity, in both languages. That
+is what a "group" here is.</p>
+
+<h2>The condition matrix — 808 groups per voice</h2>
+<table>
+<tr><th>block</th><th>conditions</th><th class=n>groups</th></tr>
+<tr><td>Emotions</td><td>40 emotions × {intense, moderate} × {free-flowing, contained} × {EN, DE}</td><td class=n>320</td></tr>
+<tr><td>VoiceNet dimensions</td><td>57 dimensions × 4 levels × {EN, DE}</td><td class=n>456</td></tr>
+<tr><td>Edge cases</td><td>screams, groans, shivers, laughter, whimpering, crying × {EN, DE}</td><td class=n>28</td></tr>
+<tr><td>Sports commentator</td><td>× {EN, DE}</td><td class=n>2</td></tr>
+<tr><td>Explicitness</td><td>× {EN, DE}, subject to an age safety gate</td><td class=n>2</td></tr>
+<tr><td colspan=2><b>total per voice</b></td><td class=n><b>808</b></td></tr>
+</table>
+<p>Every condition uses the measured best practice for that specific emotion or dimension — the
+right adapter at the right merge strength with the right prompt phrasing. <b>English and German
+share the same text slot in 404 of 404 cells</b>, so the pairing the goal depends on actually
+holds.</p>
+
+<h2>What was run</h2>
+<table>
+<tr><td>generations</td><td class=n>323,200 per profile</td></tr>
+<tr><td>candidates stored</td><td class=n>646,917</td></tr>
+<tr><td>GPU-hours</td><td class=n>152</td></tr>
+<tr><td>throughput</td><td class=n>2,126 generations/GPU-hour</td></tr>
+<tr><td>failed decodes</td><td class=n>0.10 %</td></tr>
+</table>
+<p>Every candidate — including the worst-ranked — carries 57 VoiceNet scores, 40 EmoNet scores,
+genuineness, vocal-burst blend, a 768-d VoiceCLAP embedding, a 192-d speaker embedding with its
+cosine to the reference, Parakeet-v3 word-level timestamps, a procedural caption, and every score
+component that produced its rank. Stored as WebDataset tar + parquet, so re-ranking never requires
+regenerating anything.</p>
+
+<h2>Scaling</h2>
+<table>
+<tr><th>voices</th><th class=n>GPU-hours</th><th class=n>storage</th></tr>
+<tr><td>100</td><td class=n>1,226</td><td class=n>~0.3 TB</td></tr>
+<tr><td>1,000</td><td class=n>12,260</td><td class=n>~2.8 TB</td></tr>
+<tr><td>6,000</td><td class=n>73,600</td><td class=n>~17 TB</td></tr>
+</table>
+<div class="note w"><b>6,000 voices at the full matrix is not feasible as a single run</b> —
+73,600 GPU-hours is 288 hours on 256 GPUs. The VoiceNet block is 56 % of the matrix and 57 % of
+the cost, so it is the lever. The proposal is: full matrix on 100 stratified voices, a reduced
+270-group matrix on 1,000, and the emotion block only at 6,000.</div>
+
+<h2>Findings</h2>
+
+<div class="note b"><b class=big>German conditioning holds the speaker much less well than
+English.</b> Measured over all 323,200 candidates: mean speaker similarity <b>0.578 in English
+versus 0.376 in German</b>. German takes are also longer and slower with slightly worse
+transcription accuracy. Since the entire point is a German↔English corpus that preserves speaker
+identity, <b>this is the central obstacle, not a footnote</b>, and it should be addressed before
+scaling.</div>
+
+<ul>
+<li><b>Intensity, not containment, breaks the voice clone.</b> Intense conditions sit 0.088 lower
+on speaker similarity, with <b>19.4 % below the usable floor versus 0.0 %</b> for moderate ones.
+Holding an emotion back is cheap; pushing it hard is not.</li>
+<li><b>Containment behaves as designed.</b> The contained conditions shift the vulnerability
+dimension by −0.329 while leaving emotional strength essentially intact (−0.022), at a cost of
+−0.104 genuineness.</li>
+<li><b>The 25 % Mediathek merge is almost a null result</b> — speaker similarity +0.008 and takes
+0.33 s longer, both reliable but tiny; composite score, word error rate, genuineness, blend and
+emotion strength all unchanged. A small identity gain at no cost, and no expressive benefit.</li>
+<li><b>Voice conversion is not free where it is most needed.</b> On 271 badly drifted clips
+(below 0.45) it raised similarity 0.381 → 0.623 on every single one, but cost <b>−0.109 DNSMOS</b>,
+and only 12 % passed the published keep rule. Earlier figures suggesting conversion is free were
+measured on clips that were already close to the target identity.</li>
+</ul>
+
+<h2>Honest limitations</h2>
+<div class=note>
+<ul>
+<li><b>No human listening study.</b> Every number here comes from an automatic sensor stack whose
+agreement with a human listener on spoken material is only about ρ ≈ +0.21. Treat rankings as
+useful, not authoritative.</li>
+<li>The <b>four-level VoiceNet ladder</b> ("extremely low" … "very high") and its 40 % moderate
+dose are this project's own construction — the source manual defines seven ordinal levels, not
+four — and were not separately validated.</li>
+<li>The <b>A/B/C/D stage directions are a reconstruction</b>; only the four short sublabels are
+published.</li>
+<li><b>Domains are inferred</b> from URL host plus a keyword lexicon (14 domains, ~285–290 pairs
+each), because the translation corpus ships a language table rather than a domain taxonomy. The
+inferred label is stored per row so it can be replaced.</li>
+<li>The <b>age safety cutoff was recalibrated to 2.40</b>, not the intuitive 3.00: the age
+regressor reads systematically low against this dataset's own age labels, so 3.00 would discard
+49 % of adults while still admitting 7 % of minors. The gate is conjunctive across three signals.</li>
+<li>In-loop word error rate uses whisper-large-v3-turbo; <b>Parakeet v3 runs as a second pass</b>,
+so any re-ranking that prefers it needs no regeneration.</li>
+</ul>
+</div>
+
+<p class=sub style="margin-top:32px">Base model
+<a href="https://huggingface.co/laion/moss-tts-local-transformer-4.55b-voice-acting-v2">moss-tts-local-transformer-4.55b-voice-acting-v2</a>
+· <a href="https://huggingface.co/TTS-AGI/moss-emotion-loras-v3">emotion adapters</a>
+· <a href="https://huggingface.co/laion/vocal-burst-lora-adapters">vocal-burst adapters</a>
+· <a href="https://huggingface.co/laion/moss-mediathek-emotion-lora">Mediathek adapters</a>
+· <a href="https://laion-ai.github.io/moss-voiceacting-manual/">voice-acting manual</a>
+· mirror on the <a href="https://tts-agi-moss-acting-casting.static.hf.space/voice_profile_demo_grid.html">HF Space</a></p>
+</div>
