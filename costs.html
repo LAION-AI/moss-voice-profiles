@@ -62,6 +62,45 @@ voice conversion, so the two can be compared later</td><td class=n><b>24</b></td
 N=16, 83 % at 32. Genuineness and emotion strength keep climbing all the way to 200, so they are
 what larger N actually buys.</p>
 
+
+<h2>Top-1 or top-3? What N buys, precisely</h2>
+<p>The table above answers "how good is the <b>single best</b> take out of N". If you keep more
+than one take per group that is the wrong question, so both are computed here — exactly, using
+order statistics over the real 200-candidate pools (807 groups), not by sampling.</p>
+
+<p class=sub>For a pool of M sorted candidates, the expected j-th largest of a random subset of
+size N is <code>Σ v(i)·C(i−1,N−j)·C(M−i,j−1) / C(M,N)</code>. Percentages are relative to N=8 → N=200.</p>
+
+<h3>Composite reward</h3>
+<table><tr><th class=n>N</th><th class=n>top-1</th><th class=n>% of range</th>
+<th class=n>mean of top-3</th><th class=n>% of range</th><th class=n>3rd best</th>
+<th class=n>3rd best ≈ top-1 at</th></tr><tr><td class=n>8</td><td class=n>0.4209</td><td class=n>0%</td><td class=n>0.3422</td><td class=n>0%</td><td class=n>0.2742</td><td class=n>N=8</td></tr><tr><td class=n>16</td><td class=n>0.4745</td><td class=n>27%</td><td class=n>0.4088</td><td class=n>28%</td><td class=n>0.3525</td><td class=n>N=8</td></tr><tr><td class=n>32</td><td class=n>0.5211</td><td class=n>51%</td><td class=n>0.4655</td><td class=n>52%</td><td class=n>0.4181</td><td class=n>N=8</td></tr><tr><td class=n>64</td><td class=n>0.5616</td><td class=n>72%</td><td class=n>0.5138</td><td class=n>72%</td><td class=n>0.4733</td><td class=n>N=16</td></tr><tr><td class=n>128</td><td class=n>0.5970</td><td class=n>90%</td><td class=n>0.5555</td><td class=n>90%</td><td class=n>0.5204</td><td class=n>N=32</td></tr><tr><td class=n>200</td><td class=n>0.6175</td><td class=n>100%</td><td class=n>0.5793</td><td class=n>100%</td><td class=n>0.5471</td><td class=n>N=64</td></tr></table>
+
+<h3>Speaker similarity</h3>
+<table><tr><th class=n>N</th><th class=n>top-1</th><th class=n>% of range</th>
+<th class=n>mean of top-3</th><th class=n>% of range</th><th class=n>3rd best</th>
+<th class=n>3rd best ≈ top-1 at</th></tr><tr><td class=n>8</td><td class=n>0.5891</td><td class=n>0%</td><td class=n>0.5578</td><td class=n>0%</td><td class=n>0.5289</td><td class=n>N=8</td></tr><tr><td class=n>16</td><td class=n>0.6079</td><td class=n>30%</td><td class=n>0.5853</td><td class=n>33%</td><td class=n>0.5654</td><td class=n>N=8</td></tr><tr><td class=n>32</td><td class=n>0.6230</td><td class=n>53%</td><td class=n>0.6052</td><td class=n>57%</td><td class=n>0.5899</td><td class=n>N=8</td></tr><tr><td class=n>64</td><td class=n>0.6356</td><td class=n>73%</td><td class=n>0.6208</td><td class=n>76%</td><td class=n>0.6083</td><td class=n>N=16</td></tr><tr><td class=n>128</td><td class=n>0.6465</td><td class=n>90%</td><td class=n>0.6337</td><td class=n>91%</td><td class=n>0.6229</td><td class=n>N=32</td></tr><tr><td class=n>200</td><td class=n>0.6528</td><td class=n>100%</td><td class=n>0.6410</td><td class=n>100%</td><td class=n>0.6311</td><td class=n>N=64</td></tr></table>
+
+<div class="note g"><b class=big>Two results, one of them a clean rule.</b>
+<ul>
+<li><b>The shape of the curve does not change.</b> Top-1 and mean-of-top-3 track each other almost
+exactly (27/51/72/90 % versus 28/52/72/90 %). So <b>whether you keep one take or three does not
+change which N is worth paying for</b> — the scenario recommendations are unaffected.</li>
+<li><b>But the absolute quality of what you keep does drop, by a clean factor: the 3rd best of N is
+worth about the same as the best of N/4.</b> Read the last column — the 3rd best at N=128 equals
+the top-1 at N=32, the 3rd best at N=64 equals the top-1 at N=16, and so on. It holds for speaker
+similarity too.</li>
+</ul>
+<b>Practical consequence.</b> If all three kept takes go into the corpus as equals, the effective
+quality is the <i>mean</i> of the top-3, not the max — at N=32 that is 0.4655 against 0.5211 for a
+single best-of-32, with the weakest kept take at 0.4181. To make your <i>worst kept</i> take as
+good as a single best-of-N would have been, budget <b>4× the candidates</b>.
+<br><br>
+<b>Recommendation:</b> keep <b>top-1</b> per group for the training corpus — every other candidate
+is stored anyway, so nothing is lost and re-ranking stays free. Use top-3 only where alternates are
+genuinely wanted, such as the character-cluster groups where the standard and voice-converted
+renderings are meant to be compared and annotated. Raising N across all 832 groups to compensate
+for keeping three would cost 4× and would not improve the best take at all.</div>
 <h2>The budgets</h2>
 <table><tr><th>project</th><th class=n>total core-h</th><th class=n>remaining</th>
 <th class=n>% left</th><th>expires</th></tr><tr><td><b>REFORMO</b></td><td class=n>201,600,000</td><td class=n>68,709,721</td><td class=n>34.1%</td><td>2026-12-31</td></tr><tr><td><b>LAIONIZE</b></td><td class=n>41,660,000</td><td class=n>37,569,231</td><td class=n>90.2%</td><td>2027-04-30</td></tr></table>
