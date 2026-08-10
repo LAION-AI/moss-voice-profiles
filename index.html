@@ -45,6 +45,14 @@ audio served directly from this repo.</span></a>
 <a class=c href="costs.html"><b>Cost scenarios →</b>
 <span>Eight build plans × three inference engines, priced against both compute budgets — including
 the 24 new character-cluster groups. The engine choice moves cost more than the plan does.</span></a>
+<a class=c href="mediathek_sweep.html"><b>Mediathek LoRA dose sweep →</b>
+<span>Five merge weights over 13,760 generations. Nothing happens below full strength; at full
+strength the generator breaks — and the genuineness metric rewards it for breaking. With audio at
+each dose.</span></a>
+<a class=c href="text_effect.html"><b>Does the text carry the emotion? →</b>
+<span>The controlled test: same voice, same LoRAs, same cues, same seeds — only the sentence
+changes. Emotion strength +20 %, genuineness +26 %, blend +37 %, quality flat, word error rate
+down 13 %. With A/B audio, the four conditions it made worse, and a safety failure it produced.</span></a>
 <a class=c href="text_costs.html"><b>Writing the texts →</b>
 <span>What it would cost to have an LLM write a line to fit each condition, instead of borrowing
 neutral sentences from a translation corpus. Measured Gemma throughput; the answer is that it is
@@ -120,6 +128,20 @@ both budgets, with every assumption stated.</p>
 
 <h2>Findings</h2>
 
+<div class="note b"><b class=big>The text matters more than any conditioning change measured so
+far.</b> A dozen emotions produced almost no measurable emotion — Bitterness sat at −0.005,
+Contempt 0.041, Astonishment 0.039 — even with the correct LoRA loaded and active. The cause was
+not the conditioning. It was that the sentences came from a translation corpus, so a group asking
+for <i>intense, freely expressed bitterness</i> was handed a neutral line about a gym membership.
+Rewriting each line so its content justifies the target emotion, holding everything else fixed,
+raised <b>emotion strength +22 %, genuineness +27 % and vocal-burst blend +39 %</b>, left audio
+quality unchanged and <b>lowered</b> word error rate 12 %. Bitterness −0.005 → 0.613, Contempt
+0.041 → 0.842, Hope/Enthusiasm −0.001 → 1.390, Astonishment 0.039 → 2.347; 24 of 28 conditions
+improved. This single change is
+larger than every conditioning-side intervention on this pipeline combined, and the text pass costs
+~3 GPU-h against ~100,000 for the speech.
+<b><a href="text_effect.html">Full analysis, with audio →</a></b></div>
+
 <div class="note b"><b class=big>German conditioning holds the speaker much less well than
 English.</b> Measured over all 323,200 candidates: mean speaker similarity <b>0.578 in English
 versus 0.376 in German</b>. German takes are also longer and slower with slightly worse
@@ -134,9 +156,12 @@ Holding an emotion back is cheap; pushing it hard is not.</li>
 <li><b>Containment behaves as designed.</b> The contained conditions shift the vulnerability
 dimension by −0.329 while leaving emotional strength essentially intact (−0.022), at a cost of
 −0.104 genuineness.</li>
-<li><b>The 25 % Mediathek merge is almost a null result</b> — speaker similarity +0.008 and takes
-0.33 s longer, both reliable but tiny; composite score, word error rate, genuineness, blend and
-emotion strength all unchanged. A small identity gain at no cost, and no expressive benefit.</li>
+<li><b>No dose of the Mediathek LoRA improves the corpus.</b> A full sweep at λ = 0/0.25/0.50/0.75/1.00
+over 13,760 generations: quarter, half and three-quarter merges are indistinguishable from no LoRA
+on every metric. At full strength genuineness jumps +0.815 — but <b>68.9 % of takes run to the 32 s
+generation cap</b> and word error rate triples, so the model has stopped saying the sentence. The
+genuineness scorer rates those runaway takes <i>highest</i>, which is a live risk in the ranking
+formula. <b>Ship λ=0.</b> <a href="mediathek_sweep.html">Full sweep, with audio →</a></li>
 <li><b>Voice conversion is not free where it is most needed.</b> On 271 badly drifted clips
 (below 0.45) it raised similarity 0.381 → 0.623 on every single one, but cost <b>−0.109 DNSMOS</b>,
 and only 12 % passed the published keep rule. Earlier figures suggesting conversion is free were
@@ -146,6 +171,10 @@ measured on clips that were already close to the target identity.</li>
 <h2>Honest limitations</h2>
 <div class=note>
 <ul>
+<li>The <b>text rewrite hurts low-arousal conditions</b>. Contemplation, Emotional Numbness, sports
+and Interest all lost emotion strength, because the rewrite instruction pushes toward
+expressiveness and those targets call for flatness. The instruction needs inverting for them; that
+is not yet done.</li>
 <li><b>No human listening study.</b> Every number here comes from an automatic sensor stack whose
 agreement with a human listener on spoken material is only about ρ ≈ +0.21. Treat rankings as
 useful, not authoritative.</li>
