@@ -1,0 +1,299 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Building a 240-million-sample voice-acting corpus</title>
+<style>
+:root{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--card:#fff;--good:#15803d;--bad:#b91c1c;--warn:#a16207;--acc:#7c3aed}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--card:#1b1a22;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--acc:#a78bfa}}
+:root[data-theme=dark]{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--card:#1b1a22;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--acc:#a78bfa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.68 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:46px 20px 90px}
+h1{font-size:2.1rem;margin:0 0 .25em;letter-spacing:-.02em;line-height:1.18}
+h2{font-size:1.38rem;margin:2.7em 0 .5em;border-bottom:1px solid var(--line);padding-bottom:.3em}
+h3{font-size:1.05rem;margin:1.8em 0 .4em}
+.sub{color:var(--mut);font-size:1.06rem;margin:0 0 2em}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:1em 0}
+table{border-collapse:collapse;width:100%;font-size:.91rem;min-width:560px}
+th,td{padding:8px 11px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);font-weight:600}
+.up{color:var(--good);font-weight:600}.dn{color:var(--bad);font-weight:600}
+.t{font-size:.79rem;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:17px 20px;margin:15px 0}
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:11px;padding:15px 18px;margin:1.3em 0}
+.note.b{border-left-color:var(--bad)}.note.w{border-left-color:var(--warn)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px;margin:1.5em 0}
+.big{font-size:1.85rem;font-weight:700;letter-spacing:-.02em;line-height:1.05}
+code{background:var(--bg);border:1px solid var(--line);padding:1px 5px;border-radius:4px;font-size:.87em}
+ul,ol{padding-left:22px}li{margin:7px 0}
+a{color:var(--acc)}
+.lbl{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:600}
+</style>
+<div class="wrap">
+<h1>Building a 240-million-sample voice-acting corpus</h1>
+<p class="sub">The plan, the mechanics, and what it costs &mdash; measured on this hardware, against the actual compute budgets.</p>
+<h2>What this is, in plain language</h2>
+<p>A text-to-speech model can be asked to say a sentence <i>angrily</i>, <i>quietly angry</i>,
+<i>very fast</i>, <i>with a lot of vocal fry</i>. This project builds the training data for that,
+<b>systematically</b>: for each of 6,000 distinct voices it renders every cell of a
+832-condition grid, in English <b>and</b> German, and stores every sample with full
+measurements attached.</p>
+<p>The end goal is a speech model that can be <b>steered</b> &mdash; and, further out, a
+speech-to-speech translation model that keeps the speaker and the emotional level across
+languages. That second goal is why every text exists as an EN/DE pair of the same sentence.</p>
+<div class="stats">
+<div class="card"><div class="lbl">samples</div><div class="big">240 M</div>
+<div class="t">6,000 voices &times; 832 conditions</div></div>
+<div class="card"><div class="lbl">audio</div><div class="big">523k h</div>
+<div class="t">at 7.86 s mean take length</div></div>
+<div class="card"><div class="lbl">compute</div><div class="big">15.5 M</div>
+<div class="t">core-hours, speech generation</div></div>
+<div class="card"><div class="lbl">of budget</div><div class="big">15 %</div>
+<div class="t">of both budgets combined</div></div>
+</div>
+<h2>Two subsets, built for two different jobs</h2>
+<p>The corpus is deliberately split. The two halves teach opposite things, and a model needs both.</p>
+
+<h3>Subset A &mdash; 32 samples per condition, every one a different sentence</h3>
+<p>For each of the 832 conditions, 32 samples are generated from
+<b>32 different texts</b>, each written so its content justifies that exact condition.
+This is the breadth half: it stops the model from associating "anger" with one particular
+sentence, and gives a pre-training corpus real lexical variety.</p>
+<p><b>Why this matters more than it sounds.</b> A <a href="text_effect.html">controlled experiment
+on this pipeline</a> showed that a dozen emotions produced almost no measurable emotion at all
+&mdash; Bitterness sat at &minus;0.005 &mdash; not because the conditioning was broken but because
+the sentences, drawn from a translation corpus, gave the speaker nothing to feel. Rewriting the
+text so its content carries the emotion raised emotion strength <b>+22 %</b>, genuineness
+<b>+27 %</b> and vocal-burst blend <b>+39 %</b>, with audio quality flat and word error rate
+<em>down</em> 12 %. Text is the single most effective lever measured on this system, so the corpus
+is built around it.</p>
+
+<h3>Subset B &mdash; 16 samples per condition, all sharing one text</h3>
+<p>For each of the 125 parent groups (40 emotions, 57 VoiceNet dimensions, edge cases,
+character clusters, sports, explicitness), 16 texts are each rendered through <b>all four
+sub-conditions</b>. For Anger that is intense/free-flowing, intense/contained, moderate/free-flowing
+and moderate/contained &mdash; 16 &times; 4 = 64 samples per language, the
+same words every time.</p>
+<div class="note"><b>This is the controllability half.</b> Holding the sentence fixed and varying
+only the intensity gives a model minimal pairs: the only thing that differs between two samples is
+the dimension you want to control. That is exactly what a later fine-tune needs in order to learn
+"say this same line, but angrier" &mdash; and it is impossible to learn from subset A, where text
+and condition vary together.</div>
+<h2>Where the texts come from</h2>
+<p>Every text is written by a Gemma model before any speech is generated, and every one is
+<b>seeded</b> rather than invented from nothing &mdash; a model asked to write freely collapses
+each emotion onto its most convenient topic (every bitterness line about a betrayal), destroying
+the domain balance the corpus is supposed to have.</p>
+<ul>
+<li><b>90 %</b> &mdash; a different FineTranslations sentence per sample, paraphrased so its
+content supports the target condition. Sampling is balanced across the 14 inferred domains.</li>
+<li><b>10 %</b> &mdash; ten domains where TTS systems characteristically break, at <b>1 % each</b>.
+At this scale 1 % is 1.60 M samples per domain, which is a substantial
+corpus in its own right. Within a domain, variety comes from rotating seed keywords, so the model
+is not handed the same twelve equations a million times.</li>
+</ul>
+<div class="scroll"><table><tr><th>hard domain (1 % each)</th><th style="text-align:left">what breaks</th><th style="text-align:left">seed keywords</th></tr>
+<tr><td><b>Mathematics &amp; formulae</b></td><td style="text-align:left">equations, Greek letters, operators, fractions, exponents, sub/superscripts</td><td style="text-align:left" class="t">&alpha;, &sum;, x&sup2;, 3/4, &int;, &ne;, &plusmn;, matrix, derivative, lemma</td></tr>
+<tr><td><b>Numbers, units &amp; measures</b></td><td style="text-align:left">large numbers, decimals, ordinals, ranges, currencies, units</td><td style="text-align:left" class="t">1,250,000, 3.14, 21st, 1990-1995, &euro;4.99, 37 &deg;C, 5 km/h</td></tr>
+<tr><td><b>Dates, times &amp; durations</b></td><td style="text-align:left">formats that expand differently depending on locale and context</td><td style="text-align:left" class="t">3/4/25, 1900-1945, 14:05, Q3, 2h30, fortnight</td></tr>
+<tr><td><b>Abbreviations &amp; acronyms</b></td><td style="text-align:left">letter-by-letter vs word-like, and the ones read as their expansion</td><td style="text-align:left" class="t">NASA, e.g., i.e., Dr., GmbH, z.B., ISO 9001, PhD</td></tr>
+<tr><td><b>Homographs &amp; heteronyms</b></td><td style="text-align:left">same spelling, different pronunciation, disambiguated only by sense</td><td style="text-align:left" class="t">read/read, lead/lead, live/live, bow, tear, German 'ubersetzen', 'Modern'</td></tr>
+<tr><td><b>Proper nouns &amp; loanwords</b></td><td style="text-align:left">personal, place and brand names, including foreign-origin spellings</td><td style="text-align:left" class="t">Xiaomi, Worcestershire, Nguyen, Reykjavik, Bourgogne, Oaxaca</td></tr>
+<tr><td><b>Code-switching EN&harr;DE</b></td><td style="text-align:left">a mid-sentence language switch -- directly load-bearing for this project's goal</td><td style="text-align:left" class="t">'Ich habe das feature schon deployed', 'the Umlaut is tricky'</td></tr>
+<tr><td><b>URLs, emails, paths &amp; code</b></td><td style="text-align:left">strings that are not words and must not be read as words</td><td style="text-align:left" class="t">https://a.io/x?q=1, snake_case, C:\\Users, &lt;div&gt;, npm i -g</td></tr>
+<tr><td><b>Slang, profanity &amp; net register</b></td><td style="text-align:left">registers a filtered web corpus under-represents, including censored forms</td><td style="text-align:left" class="t">swear words, f***, lol, innit, Digga, emoji-adjacent text</td></tr>
+<tr><td><b>Technical, medical &amp; legal jargon</b></td><td style="text-align:left">long low-frequency terms with irregular stress</td><td style="text-align:left" class="t">acetylsalicylic acid, &sect;823 BGB, pneumonoultramicroscopic, myocardial infarction</td></tr>
+</table></div>
+<div class="note w"><b>Caveat on that list, stated rather than hidden.</b> It is
+assembled from the standard non-standard-word taxonomy used in text-normalisation work and from
+known failure modes &mdash; <b>not</b> from a fresh literature review, because the web search tool
+was unavailable when this page was written. The categories are uncontroversial, but the specific
+choice of ten and their relative weighting deserve a review before committing compute.</div>
+<h3>Texts are written to a target length, on purpose</h3>
+<p>This is not cosmetic &mdash; it is worth real money, for a reason specific to how batched
+generation works. See <a href="#batching">the batching section</a>.</p>
+<h2 id="batching">Why batching cares about sentence length</h2>
+<p>Speech is generated autoregressively in batches of 64. A batch runs until <b>every</b> sequence
+in it has finished, so one long take holds up the other 63. Today all 64 samples in a batch are the
+same sentence, so they finish together. Give each sample a different text and the batch waits for
+the longest one.</p>
+<p>Measured on 25,850 real takes (mean 7.86 s against a 32 s generation cap, so takes
+genuinely do stop early &mdash; if they all ran to the cap this would cost nothing):</p>
+<div class="scroll"><table><tr><th>batch composition</th><th>expected longest take</th>
+<th>relative cost</th></tr>
+<tr><td>64 &times; the same text (today)</td><td>12.46 s</td><td>1.00&times;</td></tr>
+<tr><td>64 &times; different texts, unsorted</td><td>23.20 s</td><td class="dn">1.86&times;</td></tr>
+<tr><td>64 &times; different texts, sorted by word count</td><td>16.77 s</td><td>1.35&times;</td></tr>
+<tr><td>+ texts written to a target length <span class="t">(estimate)</span></td><td>&mdash;</td>
+<td class="up">~1.15&times;</td></tr></table></div>
+<p>Different <em>token counts</em> per sample cost almost nothing on their own &mdash; that only
+affects prefill, one forward pass, against ~96 sequential decode steps. The entire penalty is the
+spread in <em>durations</em>. Which is why the text generator is asked for a target length: it
+turns a 1.86&times; tax into something near 1.15&times;.</p>
+<div class="note"><b>And per useful sample, diverse texts are far cheaper, not dearer.</b> Today a
+group spends 32 generations to yield <em>one</em> selected take. Under this plan those
+same 32 generations yield 32 distinct usable samples. That is roughly
+<b>17&times; less compute per usable pre-training sample</b>, at a ~35 % batching premium. The
+trade is that each sample is a single attempt rather than the best of 32, so per-clip
+quality sits at the distribution's mean instead of its maximum &mdash; the right trade for
+pre-training breadth, the wrong one for a showcase.</div>
+<h2>Vocal bursts, placed deliberately</h2>
+<p>A gasp, a sigh, a shaky breath, a laugh. There are <b>64 trained burst adapters</b>, and the
+corpus should contain them <em>inside</em> sentences rather than as isolated sound effects.</p>
+<p>The <a href="https://projects.laion.ai/moss-voiceacting-manual/site/recipes/bursts_merging_evaluation.html">measured
+recipe</a> is specific, and it constrains the design:</p>
+<div class="scroll"><table><tr><th>burst adapter dose</th><th>burst occurs</th>
+<th>rest of the line survives</th><th>blend</th><th>WER</th></tr>
+<tr><td>none (inline tag in the script only)</td><td>21.9 %</td><td>1.00</td><td>6.63</td><td>0.05</td></tr>
+<tr><td><b>&lambda; = 0.50</b> &larr; the operating point</td><td class="up">50.3 %</td>
+<td>0.90</td><td>4.93</td><td>0.15</td></tr>
+<tr><td>&lambda; = 1.00</td><td>72.1 %</td><td class="dn">0.45</td><td>4.07</td><td class="dn">0.57</td></tr>
+</table></div>
+<p>At full merge more than half the words after the burst are never spoken. &lambda;&nbsp;=&nbsp;0.5
+is the measured optimum for "burst <em>and</em> sentence <em>and</em> blend".</p>
+<p>Design rules that follow:</p>
+<ul>
+<li><b>Every second sentence</b> carries 1&ndash;2 bursts, not every sentence. A corpus where every
+angry line contains a growl teaches the model that anger implies growling.</li>
+<li><b>All 64 classes must end up roughly equally represented</b> &mdash; a hard constraint, not a
+preference. See the section below.</li>
+<li>The burst is written <b>inline in the script</b> as well as merged. The tag alone already fires
+21.9 % of the time; the adapter multiplies that, it does not replace it.</li>
+<li><b>No emotion adapter stacked on top when the burst is the point</b> &mdash; measured, the
+emotion adapter <em>suppresses</em> bursts, 23.6 % &rarr; 16.7 %, below even the no-adapter
+baseline.</li>
+</ul>
+<div class="note w"><b>A consequence that has to be accepted up front.</b> With one take per text
+and no best-of-N selection, a tagged burst fires about <b>half</b> the time. So of the 50 % of
+sentences tagged, roughly 25 % of subset A &mdash; about <b>40 M
+samples</b> &mdash; will actually contain a burst, and the rest will be ordinary speech whose
+script mentioned one. That is still an enormous burst corpus, but the metadata must record
+<em>requested</em> and <em>detected</em> separately, or every downstream user will mistake the tag
+for a label. The manual's 4&ndash;8-candidate selection recipe reaches ~97 %, at 4&ndash;8&times;
+the cost; it is the right choice for a curated subset, not for all 160 M.</div>
+<h3>Every burst class, equally often</h3>
+<p>The obvious way to assign bursts &mdash; let each emotion draw the classes that fit it &mdash;
+produces a wildly skewed corpus. Sighs and gasps fit almost every emotion and would appear
+constantly; <code>wolf_whistle</code>, <code>hiccup</code> or <code>gurgling</code> fit almost none
+and would nearly vanish. A class with a few thousand examples is not learnable next to one with
+several million.</p>
+<p>So the allocation is <b>inverted</b>: the target count per class is fixed first, and emotion-fit
+only decides <em>where</em> each class's quota gets spent.</p>
+<ol>
+<li>Fix a global budget of burst-carrying samples and divide it equally: 64 classes &rarr;
+<b>0.63 M samples each</b>.</li>
+<li>For each class, take the set of emotions it is plausible in, and spread that class's quota
+across them &mdash; rather than letting each emotion pick freely.</li>
+<li>Where a class fits only one or two emotions, it still gets its full quota; it simply
+concentrates there. Coverage of the class is what matters, not its spread across emotions.</li>
+</ol>
+<div class="note"><b>All 64 shipped classes qualify.</b> In the manual's evaluation every one of
+the 64 scored <b>2</b> on the blind Gemini judge &mdash; the same score as the <em>real recorded
+audio</em> control, against 0.667 for the base model with no adapter. There is no subset of
+"classes that work"; they all cleared the bar, so all 64 are in the balanced rotation.
+<br><br><span class="t">Two caveats carried over from that evaluation: training-set sizes are very
+uneven (75 items for <code>swallows</code> against 1,396 for the largest, median 178), and 19 of
+the 64 were scored without a blind metric. Equal representation in the corpus is therefore
+<em>not</em> a claim of equal quality &mdash; per-class burst-detection rates should be measured on
+the output and published alongside, so a downstream user can weight them.</span></div>
+
+<div class="note"><b>Order the work queue by adapter, not by condition.</b> Each sample needs an
+emotion adapter and possibly a burst adapter. With 40 emotions &times; 64 burst classes, a naive
+ordering thrashes the adapter cache &mdash; and adapter eviction has already cost this project four
+failed runs. Sorting the queue by (emotion adapter, burst adapter) loads each combination once.</div>
+<h2>What it costs</h2><h3>1. Writing the texts</h3>
+<div class="scroll"><table><tr><th>model</th><th>subset A texts</th><th>subset B pool</th><th>GPU-h</th><th>core-h</th><th>share of total job</th></tr>
+<tr><td>Gemma 4 E4B</td><td>79.9 M pairs</td><td>200k pairs</td><td>3,767</td><td>271,222</td><td>1.7 %</td></tr>
+<tr><td>Gemma 12B bf16</td><td>79.9 M pairs</td><td>200k pairs</td><td>11,301</td><td>813,665</td><td>5.0 %</td></tr>
+</table></div>
+<div class="note"><b>Take the 12B.</b> Going from E4B to 12B costs an extra
+542,443 core-h &mdash; <b>3.3 %</b> of
+the whole job. Text generation is a rounding error against speech generation either way, so there
+is no reason to economise on the component that determines what every sample actually says. Use
+E4B only if a side-by-side shows the two are genuinely indistinguishable on this task.
+<br><br><span class="t">The E4B figure (1,299 tok/s at batch 128) is measured on one
+GH200. The 12B figure (433 tok/s) is <b>extrapolated</b> by FLOP ratio and is the
+weakest number on this page &mdash; but since the whole line item is ~4 % of the job, even a 2&times;
+error changes nothing.</span></div>
+<h3>2. Generating the speech</h3>
+<div class="scroll"><table><tr><th>batching strategy</th><th>subset A GPU-h</th><th>subset B GPU-h</th><th>total GPU-h</th><th>core-h</th></tr>
+<tr><td class="dn">naive (no bucketing)</td><td>198,083</td><td>99,041</td><td>297,124</td><td>21,392,916</td></tr>
+<tr><td>word-count bucketing</td><td>143,770</td><td>71,885</td><td>215,654</td><td>15,527,117</td></tr>
+<tr><td class="up">length-controlled + bucketing</td><td>122,470</td><td>61,235</td><td>183,706</td><td>13,226,803</td></tr>
+</table></div>
+<h3>3. Against the budgets</h3>
+<div class="scroll"><table><tr><th>scenario (speech + 12B text)</th><th>core-h</th><th>% of REFORMO left</th><th>% of LAIONIZE left</th><th>% of both</th></tr>
+<tr><td>naive (no bucketing)</td><td>22,206,581</td><td>32.3 %</td><td>59.1 %</td><td><b>20.9 %</b></td></tr>
+<tr><td>word-count bucketing</td><td>16,340,781</td><td>23.8 %</td><td>43.5 %</td><td><b>15.4 %</b></td></tr>
+<tr><td>length-controlled + bucketing</td><td>14,040,468</td><td>20.4 %</td><td>37.4 %</td><td><b>13.2 %</b></td></tr>
+</table></div>
+<p>Planning on the middle row &mdash; word-count bucketing, which is measured
+rather than estimated &mdash; the whole corpus costs <b>16,340,781 core-h</b>, about
+<b>15 %</b> of the two budgets combined. REFORMO expires 2026-12-31 and
+LAIONIZE 2027-04-30, so the split between them is a scheduling question, not a feasibility one.</p>
+<div class="scroll"><table><tr><th>nodes dedicated</th><th>wall-clock</th></tr>
+<tr><td>32 nodes (&times;4 GPUs)</td><td>70 days</td></tr>
+<tr><td>64 nodes (&times;4 GPUs)</td><td>35 days</td></tr>
+<tr><td>128 nodes (&times;4 GPUs)</td><td>18 days</td></tr>
+<tr><td>256 nodes (&times;4 GPUs)</td><td>9 days</td></tr>
+</table></div>
+<h3>4. Storage</h3>
+<p>At 160 kbps and 48 kHz &mdash; the quality the corpus is now written at &mdash;
+240 M samples of 7.86 s come to about <b>38 TB</b> of audio,
+plus metadata. Dropping to 128 kbps saves roughly a fifth. It is stored as WebDataset tar shards
+plus parquet, never as loose files: at this scale loose files would mean a quarter of a billion
+objects on a shared filesystem.</p>
+<div class="note b"><b>Why 48 kHz matters here.</b> Until this week the pipeline resampled every
+take to 16 kHz before storing it, band-limiting the whole corpus to 8 kHz, and the demo pages then
+re-encoded that to 40 kbps. The model generates at 48 kHz; the corpus now keeps it. Committing
+16,340,781 core-h to a corpus and then throwing away two thirds of its bandwidth on the way to disk
+would have been the single most expensive mistake available.</div>
+<h2>What you have at the end</h2>
+<ul>
+<li><b>240 million samples, ~523k hours</b> of conditioned speech
+across 6,000 voices, English and German, every text existing as an EN/DE pair.</li>
+<li><b>Subset A (160 M)</b> &mdash; broad, lexically diverse pre-training data
+where the words themselves carry the condition.</li>
+<li><b>Subset B (80 M)</b> &mdash; minimal pairs: identical text, one dimension
+varied. The data a controllable model needs and cannot get from subset A.</li>
+<li><b>~40 M samples with a real, labelled vocal burst</b> inside the
+sentence, across 64 classes, with requested and detected recorded separately.</li>
+<li><b>~1.6 M samples in each of ten hard-for-TTS domains</b> &mdash;
+mathematics, code-switching, slang, URLs, jargon &mdash; the material a web-scraped corpus lacks.</li>
+<li><b>Full per-sample metadata</b>: 57 VoiceNet scores, 40 EmoNet scores, genuineness,
+vocal-burst blend, a 768-d VoiceCLAP embedding, a 192-d speaker embedding with its cosine to the
+reference, word-level ASR timestamps, a procedural caption, and every score component behind its
+rank. Re-ranking never requires regenerating anything.</li>
+</ul>
+
+<h2>Decisions already settled by measurement</h2>
+<ul>
+<li><b>No Mediathek LoRA anywhere &mdash; &lambda; = 0.</b> A
+<a href="mediathek_sweep.html">full dose sweep</a> over 13,760 generations found doses of
+0.25/0.50/0.75 statistically indistinguishable from zero, and &lambda;&nbsp;=&nbsp;1.00 producing
+runaway takes 69 % of the time. Its apparent +0.815 genuineness gain was the scorer rewarding
+broken audio.</li>
+<li><b>Batch 64.</b> Measured 3.92 / 5.69 / 7.69 / 8.88&times; realtime at batch 8/16/32/64.</li>
+<li><b>Burst adapters at &lambda; = 0.5</b>, no emotion adapter stacked when the burst is the
+point.</li>
+<li><b>Store at 48 kHz / 160 kbps.</b></li>
+</ul>
+
+<h2>Open risks</h2>
+<div class="note"><ul>
+<li>The <b>1.15&times; length-controlled batching figure is an estimate</b>, not a measurement. The
+1.35&times; bucketed figure is measured and is what the budget above uses.</li>
+<li>The <b>12B throughput number is extrapolated</b> by FLOP ratio.</li>
+<li>The <b>hard-domain list was not verified against current literature</b> (search unavailable).</li>
+<li><b>German conditioning is weaker than English</b> &mdash; mean speaker similarity 0.376 vs
+0.578 over 323,200 candidates. Since the whole point is an EN/DE paired corpus, this is the
+central technical obstacle and it is not solved by any amount of text generation.</li>
+<li><b>No human listening study.</b> Every quality number here comes from automatic scorers whose
+agreement with a human listener on spoken material is about &rho;&nbsp;&asymp;&nbsp;+0.21. The
+Mediathek sweep is a worked example of a scorer confidently rewarding audio that is plainly
+broken.</li>
+</ul></div>
+<hr style="border:0;border-top:1px solid var(--line);margin:2.6em 0 1.4em">
+<p class="t">Throughput measured on GH200: 1,500 generations/GPU-h at batch 64
+(6,016 candidates in 4.01 GPU-h); node billing 72 core-h per GPU-hour.
+Budgets as of 2026-08-10.</p>
+</div>
