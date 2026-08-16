@@ -398,7 +398,7 @@ nodes; 2.3&nbsp;d at N=1</span></div>
 <p>Scenario 2 is affordable in budget terms &mdash; 3.8% of the remainder at N=8, 0.73% at N=1 &mdash;
 and both scenarios together at N=8 come to <b>60,537 GPU-hours, 15,134 node-hours,
 4.36&nbsp;Mcore-h, 4.11% of the remainder</b>. Compute is not what should decide this. The
-21-day wall clock and the 43&nbsp;TB are more real, and the quality argument is more real still.</p>
+12-day wall clock and the 43&nbsp;TB are more real, and the quality argument is more real still.</p>
 
 <h2 id="arch">8 &middot; Storage, and keeping both versions</h2>
 <div class="scroll"><table class=""><thead><tr><th class=""></th><th class="n">scenario 1</th><th class="n">scenario 2</th><th class="n">both</th></tr></thead><tbody><tr><td class="">samples</td><td class="n">20,125,736</td><td class="n">221,408,000</td><td class="n">241,533,736</td></tr><tr><td class="">candidates generated (N=8)</td><td class="n">161,005,888</td><td class="n"><b>1,771,264,000</b></td><td class="n">1,932,269,888</td></tr><tr><td class="">audio hours kept</td><td class="n">54,339</td><td class="n">597,802</td><td class="n">652,141</td></tr><tr><td class="">audio, winner only @160 kbps</td><td class="n">3.91 TB</td><td class="n">43.04 TB</td><td class="n"><b>47.0 TB</b></td></tr><tr><td class="">provenance parquet (winner)</td><td class="n">24 GB</td><td class="n">266 GB</td><td class="n">290 GB</td></tr><tr><td class="">scores for all 8 candidates (no audio)</td><td class="n">56 GB</td><td class="n">620 GB</td><td class="n">676 GB</td></tr><tr><td class="">if every candidate's audio were kept</td><td class="n">31 TB</td><td class="n">344 TB</td><td class="n">376 TB</td></tr></tbody></table></div>
@@ -470,7 +470,7 @@ defines the problem.</div>
 <div class="rec">
 <h3>Do scenario 1. Do not do scenario 2 as specified.</h3>
 <p><b>Scenario 1 &mdash; run it, at N=4, without SIDON on the output.</b> 2,730 GPU-hours, 683
-node-hours, 0.19% of the remainder, about 15 hours on 48 nodes, 3.9&nbsp;TB. It takes the whole
+node-hours, 0.19% of the remainder, about 14 hours on 48 nodes, 3.9&nbsp;TB. It takes the whole
 corpus from 63% above the identity floor to ~98%, improves the takes that were already fine, needs
 no per-voice training, and costs a third of what the LoRA path costs for a subset of the same job.
 N=4 rather than N=8 because best-of-8 buys +0.6&nbsp;pp above the floor and +6% emotion strength for
