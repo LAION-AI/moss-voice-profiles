@@ -1,0 +1,560 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Best-of-N voice conversion</title>
+<style>
+:root{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--card:#fff;--acc:#7c3aed;
+--good:#15803d;--bad:#b91c1c;--warn:#a16207;--grid:#ece9e3;
+--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;
+--line:#2c2a33;--card:#1b1a22;--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--grid:#26242e;
+--s1:#3987e5;--s2:#d95926;--s3:#199e70}}
+:root[data-theme=dark]{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--card:#1b1a22;
+--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--grid:#26242e;
+--s1:#3987e5;--s2:#d95926;--s3:#199e70}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:34px 18px 90px}
+h1{font-size:33px;margin:26px 0 8px;letter-spacing:-.022em;line-height:1.15}
+h2{font-size:23px;margin:52px 0 12px;padding-top:20px;border-top:1px solid var(--line);letter-spacing:-.01em}
+h3{font-size:17px;margin:30px 0 8px}
+.sub{color:var(--mut);font-size:16.5px;margin:0 0 26px}
+.nav{display:flex;flex-wrap:wrap;gap:7px;margin:22px 0 8px}
+.nav a{font-size:13px;padding:5px 11px;border:1px solid var(--line);border-radius:99px;
+text-decoration:none;color:var(--mut);background:var(--card)}
+.nav a:hover{border-color:var(--acc);color:var(--acc)}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mut);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto;margin:12px 0;-webkit-overflow-scrolling:touch}
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);
+border-radius:11px;padding:15px 18px;margin:18px 0}
+.note.w{border-left-color:var(--warn)}.note.b{border-left-color:var(--bad)}
+.note.g{border-left-color:var(--good)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin:24px 0}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.tile b{display:block;font-size:25px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile span{font-size:12.5px;color:var(--mut);display:block;margin-top:3px;line-height:1.4}
+.fig{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 14px 8px;margin:16px 0}
+.fig .cap{font-size:12.5px;color:var(--mut);padding:2px 6px 8px}
+.lg{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--mut);padding:0 6px 6px}
+.lg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.up{color:var(--good);font-variant-numeric:tabular-nums}
+.dn{color:var(--bad);font-variant-numeric:tabular-nums}
+.t{font-size:12px;color:var(--mut)}
+code{background:color-mix(in srgb,var(--acc) 12%,transparent);padding:1px 5px;border-radius:4px;
+font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:14px 16px;
+overflow-x:auto;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+a{color:var(--acc)}
+ul,ol{margin:10px 0;padding-left:22px}li{margin:6px 0}
+audio{width:100%;max-width:210px;height:32px;display:block;margin:2px 0}
+.rec{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:20px 22px;margin:20px 0}
+.rec h3{margin-top:0}
+</style>
+<div class="wrap">
+<p><a href="index.html">&larr; overview</a></p>
+
+<h1>Best-of-N voice conversion + SIDON, costed</h1>
+<p class="sub">A one-GPU pilot of expressive best-of-8 Chatterbox voice conversion over the
+500-voice corpus: what it costs after the pipeline is actually optimised, what it does to speaker
+identity and to expression, and what the two proposed scenarios &mdash; converting all 20.1&nbsp;M
+existing samples, and deriving 5,500 further voice profiles by borrowing and converting &mdash;
+would cost in GPU-hours, node-hours and disk.</p>
+
+<div class="nav">
+<a href="#setup">Pilot setup</a><a href="#ref">The reference</a><a href="#thr">Throughput</a>
+<a href="#quality">Quality, before and after</a><a href="#listen">Listen</a>
+<a href="#s1">Scenario 1</a><a href="#s2">Scenario 2</a><a href="#arch">Architecture</a>
+<a href="#vs">Versus the LoRA repair</a><a href="#rec">Recommendation</a><a href="#limits">Limits</a>
+</div>
+
+<div class="tiles">
+<div class="tile"><b>0.251</b><span>GPU-hours per 1,000 samples at best-of-8, after optimisation
+(1.91&times; the unoptimised pipeline, 1.98&times; better than the upstream reference design)</span></div>
+<div class="tile"><b>0&nbsp;&rarr;&nbsp;95.4%</b><span>of below-floor takes cross the 0.40 ECAPA
+speaker-similarity floor when converted to their own reference</span></div>
+<div class="tile"><b>&minus;50.8%</b><span>target emotion strength on the emotion block &mdash;
+the price, and it is not small</span></div>
+<div class="tile"><b>5,044</b><span>GPU-hours for scenario 1 (all 20.1&nbsp;M), 0.34% of the
+106&nbsp;Mcore-h remainder</span></div>
+<div class="tile"><b>55,493</b><span>GPU-hours for scenario 2 (5,500 voices), 3.77% of the
+remainder, 1.77&nbsp;billion candidates</span></div>
+<div class="tile"><b>47&nbsp;TB</b><span>storage delta, on top of the existing 3.9&nbsp;TB corpus</span></div>
+</div>
+
+<div class="note b"><b>The headline is a trade, not a win.</b> Voice conversion fixes the identity
+problem better and far more cheaply than the LoRA repair path does &mdash; and it halves the
+emotion strength of every emotion-conditioned take while doing it. The VoiceNet-dimension block
+survives almost untouched (&minus;2.8%); the emotion block does not. Anything that ships from this
+pipeline should be labelled and filtered on that basis, not merged silently into the corpus.</div>
+
+<h2 id="setup">1 &middot; What was piloted</h2>
+<p>354 real corpus takes drawn from four vp500 voices spanning the whole severity range of the
+identity problem (8.5% to 84.6% of their takes below the floor), stratified across all seven
+condition blocks and both languages, and selected so that 37.0% sit below the 0.40 ECAPA floor.
+Mean clip length <b>9.72&nbsp;s</b> &mdash; identical to the corpus mean, so the cost numbers
+extrapolate without a length correction.</p>
+<p>Each take was converted with <b>8 candidates</b> toward a prepared reference, all 8 scored, the
+best kept. Three arms ran over the same 354 takes:</p>
+<ul>
+<li><b>self</b> &mdash; target is the take's <i>own</i> reference voice. This is voice conversion as
+an identity-repair path, and it is scenario&nbsp;1.</li>
+<li><b>nn</b> &mdash; target is the acoustically <i>nearest</i> other voice that has a corpus.
+This is scenario&nbsp;2, with the best match it can get.</li>
+<li><b>far</b> &mdash; target is a deliberately distant voice (95th-percentile distance). This is
+scenario&nbsp;2 when the nearest match is not near.</li>
+</ul>
+<p>1,062 samples, 8,496 candidates, one GH200. Every candidate was scored with the corpus's own
+sensors (<code>pp_scores_fast</code>: voiceclap blend and genuineness, BUD-E emonet, 57 VoiceNet
+dimensions, DNSMOS-distilled quality) so before and after are the same instrument, plus two
+independent speaker embedders &mdash; <b>ECAPA-TDNN</b>, which is what the 0.40 floor is defined on,
+and <b>Orange Speaker-wavLM-tbr</b>, which is not.</p>
+
+<div class="note"><b>The measurement trap, and how it was avoided.</b> The prepared reference is
+not the same signal as the reference the corpus generator used, so ECAPA against it is
+<i>not</i> comparable to the corpus's stored <code>spk_sim</code>. Every identity number below is
+measured against <code>manifest_&lt;cid&gt;.json["ref_wav"]</code> &mdash; the exact 16&nbsp;kHz file
+<code>vpgen.py</code> used &mdash; so "above the floor" means the same thing before and after.
+Scoring against the prepared reference instead would have inflated the self-arm result from
+64.9% to 67.8% mean ECAPA for free.</div>
+
+<h2 id="ref">2 &middot; Preparing the reference &mdash; and why &minus;23 LUFS</h2>
+<p>A bad reference degrades every conversion made from it and nothing in the output says so, so the
+preparation chain was measured rather than trusted. All 500 references were rebuilt from
+<code>&lt;cid&gt;.orig.mp3</code> &mdash; uniformly, because the shipped set is a mix of orig / sidon
+/ cbx variants chosen per voice by DNSMOS &mdash; through
+<b>SIDON restoration &rarr; EBU&nbsp;R128 integrated loudness &rarr; peak ceiling 0.95</b>.
+72.8 minutes of reference audio, 53.2&nbsp;s of GPU (82&times; realtime).</p>
+
+<h3>The loudness target is not a matter of taste</h3>
+<p>SIDON returns audio already peak-normalised to 0.9. That leaves only +0.47&nbsp;dB of headroom
+under a 0.95 ceiling, so <b>any target louder than the material makes the ceiling eat the entire
+gain and the normalisation silently becomes a no-op.</b> Measured over the 500 prepared references:</p>
+<div class="scroll"><table class=""><thead><tr><th class="">EBU R128 target</th><th class="n">peak ceiling engages</th><th class="n">lands within 0.5 LU</th><th class="n">median landed</th></tr></thead><tbody><tr><td class="">&minus;14 LUFS</td><td class="n">99.8%</td><td class="n">0.4%</td><td class="n">&minus;20.98</td></tr><tr><td class="">&minus;18 LUFS <span class=t>(project default for refs)</span></td><td class="n"><b>92.2%</b></td><td class="n"><b>9.8%</b></td><td class="n">&minus;20.98</td></tr><tr><td class="">&minus;20 LUFS</td><td class="n">74.4%</td><td class="n">36.4%</td><td class="n">&minus;20.98</td></tr><tr><td class=""><b>&minus;23 LUFS</b> <span class=t>(chosen)</span></td><td class="n"><b>9.8%</b></td><td class="n"><b>94.8%</b></td><td class="n">&minus;23.00</td></tr><tr><td class="">&minus;26 LUFS</td><td class="n">0.0%</td><td class="n">100.0%</td><td class="n">&minus;26.00</td></tr></tbody></table></div>
+<p>The project's existing reference-pool default is &minus;18&nbsp;LUFS
+(<code>build_ref_pool.py</code>). On SIDON output that target is a no-op for
+<b>92.2%</b> of references &mdash; and the ablation below confirms it: the
+&minus;18 arm and the plain peak-normalised arm produce the same conversions to three decimal
+places. <b>&minus;23&nbsp;LUFS</b> is the shallowest target that clears the ceiling for almost
+everything, and it is the standard EBU&nbsp;R128 delivery level. It collapses the reference level
+spread from <b>8.41&nbsp;LU</b> (p5&ndash;p95 of the originals) to <b>0.52&nbsp;LU</b>, which is the
+real point: 6,000 references conditioning one model should not differ by 8&nbsp;dB.</p>
+
+<h3>Verifying the prepared references</h3>
+<p>768 conversions per arm, four voices, identical sources and seeds. Identity is scored against the
+<i>untouched original</i> reference in every arm, so the arms are comparable:</p>
+<div class="scroll"><table class=""><thead><tr><th class="">reference prepared as</th><th class="n">ECAPA</th><th class="n">WavLM</th><th class="n">Overall&nbsp;Q</th><th class="n">Speech&nbsp;Q</th><th class="n">blend</th><th class="n">genuineness</th></tr></thead><tbody><tr><td class="">original, peak&#8209;normalised to 0.97 <span class=t>(upstream default)</span></td><td class="n">0.6813</td><td class="n">0.8028</td><td class="n">2.9505</td><td class="n">1.9269</td><td class="n">2.593</td><td class="n">0.636</td></tr><tr><td class="">original, R128 &minus;23 LUFS</td><td class="n">0.6819</td><td class="n">0.8006</td><td class="n">2.9730</td><td class="n">1.9368</td><td class="n">2.707</td><td class="n">0.692</td></tr><tr><td class="">SIDON, peak&#8209;normalised to 0.97</td><td class="n">0.6245</td><td class="n">0.7423</td><td class="n">3.0032</td><td class="n">1.9460</td><td class="n">2.861</td><td class="n">0.566</td></tr><tr><td class="">SIDON, R128 &minus;18 LUFS</td><td class="n">0.6247</td><td class="n">0.7424</td><td class="n">3.0038</td><td class="n">1.9461</td><td class="n">2.869</td><td class="n">0.567</td></tr><tr><td class=""><b>SIDON, R128 &minus;23 LUFS</b> <span class=t>(used in the pilot)</span></td><td class="n">0.6261</td><td class="n">0.7435</td><td class="n">3.0118</td><td class="n">1.9500</td><td class="n">2.972</td><td class="n">0.590</td></tr></tbody></table></div>
+<div class="note w"><b>SIDON on the reference is a genuine trade, not a free win.</b> It buys
+quality (+0.039 Overall&nbsp;Q over the loudness-only arm) and noticeably better vocal-burst blend
+(+0.265), and it costs <b>&minus;0.056 ECAPA and &minus;0.057 WavLM</b>. Both embedders agree, so
+this is a real timbre shift, not an ECAPA artefact &mdash; restoring the reference moves the target
+slightly away from the voice as originally recorded. Loudness normalisation on its own is free and
+strictly positive (+0.022 Overall&nbsp;Q, +0.114 blend, identity unchanged).
+<br><br>Across the 500 references, SIDON helped most exactly where it should: <b>+0.151</b>
+Overall&nbsp;Q on the worst-quality quartile, <b>&minus;0.037</b> on the best. Identity survived
+(ECAPA original-vs-prepared 0.900 mean, only 0.6% of references below 0.75).
+<b>The defensible rule is to loudness-normalise always and SIDON conditionally</b>, gated on the
+reference's own quality score &mdash; not to restore all 6,000 blindly. The pilot ran SIDON on all
+of them, so its identity numbers carry that &minus;0.06 penalty throughout.</div>
+
+<h2 id="thr">3 &middot; Throughput</h2>
+<p>The project has a precedent here: LeVo went from 0.67&times; to 11.7&times; realtime once it
+stopped being CPU-dispatch-bound. The same disease was present in three places.</p>
+
+<h3>Batching the generator</h3>
+<p>Voice conversion is stochastic &mdash; the flow-matching decoder starts from Gaussian noise, so
+the N candidates are N independent draws that can share one forward pass. Batching them is
+where most of the speed is:</p>
+<div class="fig"><div class=lg><span><i style="background:var(--s1)"></i>candidates in one pass, single source</span></div><svg viewBox="0 0 560 250" width="100%" role="img" style="max-width:560px"><line x1="58" y1="208.0" x2="542" y2="208.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="212.0" text-anchor="end" fill="var(--mut)" font-size="11">0</text><line x1="58" y1="159.5" x2="542" y2="159.5" stroke="var(--grid)" stroke-width="1"/><text x="51" y="163.5" text-anchor="end" fill="var(--mut)" font-size="11">155</text><line x1="58" y1="111.0" x2="542" y2="111.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="115.0" text-anchor="end" fill="var(--mut)" font-size="11">311</text><line x1="58" y1="62.5" x2="542" y2="62.5" stroke="var(--grid)" stroke-width="1"/><text x="51" y="66.5" text-anchor="end" fill="var(--mut)" font-size="11">466</text><line x1="58" y1="14.0" x2="542" y2="14.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="18.0" text-anchor="end" fill="var(--mut)" font-size="11">622</text><text x="58.0" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">1</text><text x="138.7" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">2</text><text x="219.3" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">4</text><text x="300.0" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">8</text><text x="380.7" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">16</text><text x="461.3" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">32</text><text x="542.0" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">64</text><text x="300" y="246" text-anchor="middle" fill="var(--mut)" font-size="11">candidates in one forward pass (N), single source</text><text x="12" y="111" text-anchor="middle" fill="var(--mut)" font-size="11" transform="rotate(-90 12 111)">ms per candidate</text><polyline fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" points="58.0,37.8 138.7,114.8 219.3,110.7 300.0,150.1 380.7,144.8 461.3,166.7 542.0,168.7"/><circle cx="58.0" cy="37.8" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="138.7" cy="114.8" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="219.3" cy="110.7" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="300.0" cy="150.1" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="380.7" cy="144.8" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="461.3" cy="166.7" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="542.0" cy="168.7" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><text x="58.0" y="26.8" text-anchor="middle" fill="var(--fg)" font-size="10.5">545</text><text x="138.7" y="103.8" text-anchor="middle" fill="var(--fg)" font-size="10.5">299</text><text x="219.3" y="99.7" text-anchor="middle" fill="var(--fg)" font-size="10.5">312</text><text x="300.0" y="139.1" text-anchor="middle" fill="var(--fg)" font-size="10.5">186</text><text x="380.7" y="133.8" text-anchor="middle" fill="var(--fg)" font-size="10.5">203</text><text x="461.3" y="155.7" text-anchor="middle" fill="var(--fg)" font-size="10.5">132</text><text x="542.0" y="157.7" text-anchor="middle" fill="var(--fg)" font-size="10.5">126</text></svg>
+<div class="cap">One source clip, fp32. 545&nbsp;ms per candidate unbatched &rarr; 126&nbsp;ms at
+N=64: a <b>4.3&times;</b> saving that costs nothing but arranging the tensor.</div></div>
+
+<p>Beyond that, several <i>different</i> sources can be packed into the same pass. That works, but
+the gain is small &mdash; once ~64 items are in flight the GH200 is saturated and it stops mattering
+where they came from:</p>
+<div class="fig"><div class=lg><span><i style="background:var(--s2)"></i>sources packed per pass, N=8</span></div><svg viewBox="0 0 560 250" width="100%" role="img" style="max-width:560px"><line x1="58" y1="208.0" x2="542" y2="208.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="212.0" text-anchor="end" fill="var(--mut)" font-size="11">0</text><line x1="58" y1="159.5" x2="542" y2="159.5" stroke="var(--grid)" stroke-width="1"/><text x="51" y="163.5" text-anchor="end" fill="var(--mut)" font-size="11">39</text><line x1="58" y1="111.0" x2="542" y2="111.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="115.0" text-anchor="end" fill="var(--mut)" font-size="11">78</text><line x1="58" y1="62.5" x2="542" y2="62.5" stroke="var(--grid)" stroke-width="1"/><text x="51" y="66.5" text-anchor="end" fill="var(--mut)" font-size="11">117</text><line x1="58" y1="14.0" x2="542" y2="14.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="18.0" text-anchor="end" fill="var(--mut)" font-size="11">157</text><text x="58.0" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">1</text><text x="154.8" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">2</text><text x="251.6" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">4</text><text x="348.4" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">8</text><text x="445.2" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">16</text><text x="542.0" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">32</text><text x="300" y="246" text-anchor="middle" fill="var(--mut)" font-size="11">sources packed per forward pass (M), N=8</text><text x="12" y="111" text-anchor="middle" fill="var(--mut)" font-size="11" transform="rotate(-90 12 111)">ms per candidate</text><polyline fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" points="58.0,37.8 154.8,47.2 251.6,54.1 348.4,62.3 445.2,56.6 542.0,54.1"/><circle cx="58.0" cy="37.8" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><circle cx="154.8" cy="47.2" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><circle cx="251.6" cy="54.1" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><circle cx="348.4" cy="62.3" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><circle cx="445.2" cy="56.6" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><circle cx="542.0" cy="54.1" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><text x="58.0" y="26.8" text-anchor="middle" fill="var(--fg)" font-size="10.5">137</text><text x="154.8" y="36.2" text-anchor="middle" fill="var(--fg)" font-size="10.5">130</text><text x="251.6" y="43.1" text-anchor="middle" fill="var(--fg)" font-size="10.5">124</text><text x="348.4" y="51.3" text-anchor="middle" fill="var(--fg)" font-size="10.5">118</text><text x="445.2" y="45.6" text-anchor="middle" fill="var(--fg)" font-size="10.5">122</text><text x="542.0" y="43.1" text-anchor="middle" fill="var(--fg)" font-size="10.5">124</text></svg>
+<div class="cap">N=8 throughout, length-bucketed. 137&nbsp;ms/candidate at M=1 &rarr; 118&nbsp;ms at
+M=8 (64 in flight), then flat and slightly worse. Peak memory rises 2.7&nbsp;&rarr;&nbsp;49&nbsp;GB
+across this range, so M=8 is also the cheap point.</div></div>
+
+<div class="note"><b>Packing is only legal if the padding does not change the audio, so that was
+checked rather than assumed.</b> Sources in a packed batch have different token lengths and must be
+right-padded. Against the natural seed-to-seed spread as the control: output lengths are identical
+to the solo case; log-energy envelope correlation is <b>0.9775</b> packed-vs-solo
+against a control of <b>0.9789</b>; BUD-E encoder cosine is <b>0.9981</b>
+against a control of <b>0.9976</b>. Packing is indistinguishable from re-rolling the
+seed. <b>Length bucketing</b> matters more than packing itself: sorting sources by duration cuts
+padding waste from <b>51%</b> to <b>8%</b> and
+buys 16% throughput.</div>
+
+<h3>SIDON was 290&times; slower than it needed to be</h3>
+<p>The upstream <code>expressive_bestofn</code> pipeline restores candidates one at a time through
+the TorchScript <code>sidon-v0.1</code> path. On a 16&nbsp;s clip that measured
+<b>11,017&nbsp;ms per candidate</b> here, and batching it made no difference &mdash; the time was
+going into a CPU-side feature extractor, not the GPU. This project already solved that properly:
+<code>mediathek_sidon/code/sidon_batch.py</code> featurises per item (the stacked-frame extractor's
+attention mask disagrees with the real frame count for some lengths, which a naive padded batch gets
+wrong on 15 of 16 items), batches the w2v-BERT encoder, and groups the DAC decoder by identical
+frame count because that decoder is not causal. Reusing it, with the remaining CPU featurisation
+moved to a thread pool:</p>
+<div class="scroll"><table><thead><tr><th>SIDON path</th><th class="n">ms / clip @ 9.72&nbsp;s</th>
+<th class="n">&times; realtime</th></tr></thead><tbody>
+<tr><td>upstream TorchScript, one clip at a time</td><td class="n">11,017 <span class=t>(16&nbsp;s clip)</span></td><td class="n">1.5</td></tr>
+<tr><td>this project's batched path, B=32</td><td class="n"><b>38.3</b></td><td class="n"><b>254</b></td></tr>
+</tbody></table></div>
+<p class="t">Verified bit-exact against the serial path (correlation 1.000000 on all 8 clips;
+parallel featurisation differs by 0.00e+00).</p>
+
+<h3>The whole pipeline, end to end</h3>
+<p>Five configurations on the same clips at the corpus-mean length, N=8, sources packed 8 per pass:</p>
+<div class="scroll"><table class=""><thead><tr><th class="">pipeline configuration</th><th class="n">ms / sample</th><th class="n">samples / GPU&#8209;h</th><th class="n">GPU&#8209;h / 1,000</th><th class="n">generation</th><th class="n">scoring</th><th class="n">MP3</th><th class="n">SIDON</th></tr></thead><tbody><tr><td class="">pilot config</td><td class="n">1725</td><td class="n">2,088</td><td class="n">0.4790</td><td class="n">1206</td><td class="n">194</td><td class="n">212</td><td class="n">60</td></tr><tr><td class="">+tf32</td><td class="n">1194</td><td class="n">3,014</td><td class="n">0.3318</td><td class="n">794</td><td class="n">116</td><td class="n">210</td><td class="n">42</td></tr><tr><td class="">+threaded mp3</td><td class="n">1013</td><td class="n">3,554</td><td class="n">0.2814</td><td class="n">792</td><td class="n">117</td><td class="n">37</td><td class="n">36</td></tr><tr><td class="">-sidon on output</td><td class="n">972</td><td class="n">3,705</td><td class="n">0.2699</td><td class="n">794</td><td class="n">118</td><td class="n">25</td><td class="n">0</td></tr><tr><td class="">+cheap ranking</td><td class="n">902</td><td class="n">3,989</td><td class="n">0.2507</td><td class="n">792</td><td class="n">55</td><td class="n">26</td><td class="n">0</td></tr></tbody></table></div>
+<p class="t">Stage columns are milliseconds per shipped sample. "cheap ranking" scores the 8
+candidates with the four pooled quality heads only and defers the full 57-VoiceNet + 40-emonet pass
+to the winner &mdash; the corpus-grade annotation is only needed on the take that ships.</p>
+<div class="note g"><b>1.91&times; end to end, and none of it cost quality.</b> TF32 on the
+flow-matching decoder is <b>free</b>: identical scores to four decimals (ECAPA 0.626087 vs 0.626063,
+Overall&nbsp;Q 3.0118 vs 3.0114) for a 1.60&times; generation speed-up. This is worth stating because
+this project measured TF32 costing ~15&nbsp;dB in SIDON &mdash; s3gen simply does not have that
+sensitivity, and it was checked rather than inherited. MP3 encoding was 15% of the budget as a
+serial CPU tail and drops to 2.8% in a thread pool. Dropping SIDON from the output path is
+<i>also</i> a quality improvement, for reasons in &sect;4.
+<br><br>Generation is now <b>88%</b> of the remaining budget. The model is the bottleneck again,
+which is where it should be.</div>
+
+<h3>What best-of-N actually costs</h3>
+<div class="fig"><div class=lg><span><i style="background:var(--s1)"></i>GPU-hours per 1,000 samples</span></div><svg viewBox="0 0 560 250" width="100%" role="img" style="max-width:560px"><line x1="58" y1="208.0" x2="542" y2="208.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="212.0" text-anchor="end" fill="var(--mut)" font-size="11">0.00</text><line x1="58" y1="159.5" x2="542" y2="159.5" stroke="var(--grid)" stroke-width="1"/><text x="51" y="163.5" text-anchor="end" fill="var(--mut)" font-size="11">0.26</text><line x1="58" y1="111.0" x2="542" y2="111.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="115.0" text-anchor="end" fill="var(--mut)" font-size="11">0.53</text><line x1="58" y1="62.5" x2="542" y2="62.5" stroke="var(--grid)" stroke-width="1"/><text x="51" y="66.5" text-anchor="end" fill="var(--mut)" font-size="11">0.79</text><line x1="58" y1="14.0" x2="542" y2="14.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="18.0" text-anchor="end" fill="var(--mut)" font-size="11">1.05</text><text x="58.0" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">1</text><text x="154.8" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">2</text><text x="251.6" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">4</text><text x="348.4" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">8</text><text x="445.2" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">16</text><text x="542.0" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">32</text><text x="300" y="246" text-anchor="middle" fill="var(--mut)" font-size="11">candidates generated per sample (N)</text><text x="12" y="111" text-anchor="middle" fill="var(--mut)" font-size="11" transform="rotate(-90 12 111)">GPU-h / 1,000 samples</text><polyline fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" points="58.0,199.1 154.8,193.9 251.6,183.0 348.4,161.8 445.2,120.6 542.0,37.8"/><circle cx="58.0" cy="199.1" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="154.8" cy="193.9" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="251.6" cy="183.0" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="348.4" cy="161.8" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="445.2" cy="120.6" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="542.0" cy="37.8" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><text x="58.0" y="188.1" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.049</text><text x="154.8" y="182.9" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.076</text><text x="251.6" y="172.0" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.136</text><text x="348.4" y="150.8" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.251</text><text x="445.2" y="109.6" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.474</text><text x="542.0" y="26.8" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.923</text></svg>
+<div class="cap">End to end, optimised configuration. Above N=2 the cost is essentially linear in
+N &mdash; the batching win has already been banked, so each extra candidate is paid for in full.</div></div>
+<div class="scroll"><table class=""><thead><tr><th class="">N</th><th class="n">sources packed</th><th class="n">items in flight</th><th class="n">ms / candidate</th><th class="n">ms / sample</th><th class="n">samples / GPU&#8209;h</th><th class="n">GPU&#8209;h / 1,000</th></tr></thead><tbody><tr><td class="">1</td><td class="n">32</td><td class="n">32</td><td class="n">124.3</td><td class="n">180</td><td class="n">19,960</td><td class="n">0.0501</td></tr><tr><td class="">1</td><td class="n">8</td><td class="n">8</td><td class="n">117.5</td><td class="n">175</td><td class="n">20,605</td><td class="n">0.0485</td></tr><tr><td class="">2</td><td class="n">16</td><td class="n">32</td><td class="n">105.6</td><td class="n">275</td><td class="n">13,087</td><td class="n">0.0764</td></tr><tr><td class="">4</td><td class="n">16</td><td class="n">64</td><td class="n">103.0</td><td class="n">488</td><td class="n">7,371</td><td class="n">0.1357</td></tr><tr><td class="">8</td><td class="n">8</td><td class="n">64</td><td class="n">99.1</td><td class="n">902</td><td class="n">3,990</td><td class="n">0.2506</td></tr><tr><td class="">8</td><td class="n">16</td><td class="n">128</td><td class="n">101.7</td><td class="n">921</td><td class="n">3,909</td><td class="n">0.2558</td></tr><tr><td class="">16</td><td class="n">4</td><td class="n">64</td><td class="n">94.9</td><td class="n">1706</td><td class="n">2,110</td><td class="n">0.4740</td></tr><tr><td class="">32</td><td class="n">2</td><td class="n">64</td><td class="n">92.8</td><td class="n">3322</td><td class="n">1,084</td><td class="n">0.9229</td></tr></tbody></table></div>
+<p class="t">The pilot job itself &mdash; 354 takes &times; 3 arms, fp32, full scoring on all 8,
+SIDON on the winner &mdash; ran 1,062 samples in 1,451.6&nbsp;s: 1.367&nbsp;s/sample,
+0.380 GPU-h per 1,000. The optimised figure of 0.251 is the one used for costing.</p>
+
+<h2 id="quality">4 &middot; Quality, before and after</h2>
+
+<h3>Identity: the pilot's central result</h3>
+<p>ECAPA cosine to the corpus's own reference file, so these numbers sit on the same scale as the
+corpus's stored <code>spk_sim</code> and the same 0.40 floor. WavLM is measured against the same
+reference with Orange's published same-speaker threshold of 0.472.</p>
+<div class="scroll"><table class=""><thead><tr><th class="">arm</th><th class="n">n</th><th class="n">ECAPA before</th><th class="n">ECAPA after</th><th class="n">above 0.40 before</th><th class="n">above 0.40 after</th><th class="n">WavLM after</th><th class="n">above 0.472 after</th></tr></thead><tbody><tr><td class=""><b>self</b> &mdash; own reference (repair)</td><td class="n">354</td><td class="n">0.4921</td><td class="n">0.6489</td><td class="n">63.0%</td><td class="n"><b>98.3%</b></td><td class="n">0.8019</td><td class="n">98.6%</td></tr><tr><td class="">&nbsp;&nbsp;&mdash; takes below the floor</td><td class="n">131</td><td class="n">0.2460</td><td class="n">0.5528</td><td class="n">0.0%</td><td class="n"><b>95.4%</b></td><td class="n">0.7420</td><td class="n">96.2%</td></tr><tr><td class="">&nbsp;&nbsp;&mdash; takes already above it</td><td class="n">223</td><td class="n">0.6367</td><td class="n">0.7054</td><td class="n">100.0%</td><td class="n"><b>100.0%</b></td><td class="n">0.8371</td><td class="n">100.0%</td></tr><tr><td class=""><b>nn</b> &mdash; nearest other voice</td><td class="n">354</td><td class="n">0.4921</td><td class="n">0.5572</td><td class="n">63.0%</td><td class="n"><b>80.2%</b></td><td class="n">0.7873</td><td class="n">98.6%</td></tr><tr><td class="">&nbsp;&nbsp;&mdash; takes below the floor</td><td class="n">131</td><td class="n">0.2460</td><td class="n">0.4763</td><td class="n">0.0%</td><td class="n"><b>69.5%</b></td><td class="n">0.7542</td><td class="n">96.9%</td></tr><tr><td class="">&nbsp;&nbsp;&mdash; takes already above it</td><td class="n">223</td><td class="n">0.6367</td><td class="n">0.6047</td><td class="n">100.0%</td><td class="n"><b>86.5%</b></td><td class="n">0.8067</td><td class="n">99.6%</td></tr><tr><td class=""><b>far</b> &mdash; distant voice</td><td class="n">354</td><td class="n">0.4921</td><td class="n">0.4282</td><td class="n">63.0%</td><td class="n"><b>62.7%</b></td><td class="n">0.6042</td><td class="n">85.6%</td></tr><tr><td class="">&nbsp;&nbsp;&mdash; takes below the floor</td><td class="n">131</td><td class="n">0.2460</td><td class="n">0.4298</td><td class="n">0.0%</td><td class="n"><b>64.1%</b></td><td class="n">0.6262</td><td class="n">89.3%</td></tr><tr><td class="">&nbsp;&nbsp;&mdash; takes already above it</td><td class="n">223</td><td class="n">0.6367</td><td class="n">0.4272</td><td class="n">100.0%</td><td class="n"><b>61.9%</b></td><td class="n">0.5913</td><td class="n">83.4%</td></tr></tbody></table></div>
+<div class="note g"><b>Converting a take to its own reference is a very effective identity repair.</b>
+Of the 131 sampled takes below the floor, <b>95.4% cross it</b>, mean ECAPA
+0.246&nbsp;&rarr;&nbsp;0.553. Takes that were already above the floor stay above it and get
+<i>better</i> (0.637&nbsp;&rarr;&nbsp;0.705), so this is not a treatment that has to be targeted at
+the failures &mdash; it is safe to run over everything, which is what the owner asked for.</div>
+<div class="note b"><b>Borrowing another voice's corpus is a different proposition entirely.</b> In
+the <b>nn</b> arm, takes that were already above the floor <i>fall</i> from 100% to 86.5%. In the
+<b>far</b> arm they fall to 61.9%, and the arm as a whole ends up no better than it started
+(63.0% &rarr; 62.7%). Conversion does not confer identity for free; it confers it in proportion to
+how close the target already was. Correlation between match distance and achieved ECAPA across the
+eight source/target pairs: <b>r = &minus;0.755</b>.</div>
+
+<h3>The two floors disagree, and that matters</h3>
+<p>The 0.40 figure is an ECAPA-scale convention, not a perceptual fact. Of the pilot's converted
+takes that remain below the ECAPA floor, <b>50%</b> are above WavLM's own same-speaker threshold.
+On the other side, <b>98.6%</b> of converted takes clear
+the WavLM threshold against
+<b>98.3%</b> clearing the ECAPA one &mdash; here the two
+sensors broadly agree that conversion worked, which is a stronger claim than either alone. The
+disagreement is concentrated in the residue.</p>
+
+<h3>The cost: expression</h3>
+<div class="scroll"><table class=""><thead><tr><th class="">target measure</th><th class="n">before (corpus)</th><th class="n">after conversion</th><th class="n">change</th></tr></thead><tbody><tr><td class=""><b>emotion strength</b> &mdash; emonet score of the conditioned emotion, emotion block (n=166)</td><td class="n">1.2457</td><td class="n">0.6128</td><td class="n"><span class="dn">-50.8%</span></td></tr><tr><td class=""><b>target VoiceNet dimension</b> &mdash; |steered dimension|, voicenet block (n=188)</td><td class="n">2.5523</td><td class="n">2.4803</td><td class="n"><span class="dn">-2.8%</span></td></tr><tr><td class=""><b>vocal-burst blend</b> (all blocks)</td><td class="n">2.0836</td><td class="n">2.6094</td><td class="n"><span class="up">+25.2%</span></td></tr><tr><td class=""><b>genuineness</b> (all blocks)</td><td class="n">0.6167</td><td class="n">0.7168</td><td class="n"><span class="up">+16.2%</span></td></tr></tbody></table></div>
+<div class="note b"><b>Conversion halves the emotion.</b> The conditioned emotion's own emonet
+score drops <b>50.8%</b> on the emotion block, and it drops by almost exactly the same amount in all
+three arms (&minus;50.5% far, &minus;51.3% nn) &mdash; so it is conversion itself doing it, not the
+choice of target. The VoiceNet-dimension block, which is 456 of the 842 groups, is essentially
+unharmed at <b>&minus;2.8%</b>: steered voice qualities such as brightness or roughness survive
+resynthesis, while the acted intensity of an emotional performance does not. Blend and genuineness
+both <i>improve</i>, which is consistent with a vocoder that smooths and normalises.
+<br><br>This is the finding that would have been missed by measuring identity alone, and it is the
+reason a converted corpus is not a drop-in replacement for the original.</div>
+
+<h3>Per block</h3>
+<div class="scroll"><table class=""><thead><tr><th class="">block</th><th class="n">n</th><th class="n">ECAPA before</th><th class="n">ECAPA after</th><th class="n">above floor before</th><th class="n">above floor after</th><th class="n">blend before</th><th class="n">blend after</th></tr></thead><tbody><tr><td class="">voicenet</td><td class="n">188</td><td class="n">0.5066</td><td class="n">0.6433</td><td class="n">66.0%</td><td class="n">98.4%</td><td class="n">1.696</td><td class="n">2.341</td></tr><tr><td class="">emotion</td><td class="n">120</td><td class="n">0.4893</td><td class="n">0.6673</td><td class="n">60.0%</td><td class="n">99.2%</td><td class="n">2.646</td><td class="n">3.111</td></tr><tr><td class="">character</td><td class="n">12</td><td class="n">0.5297</td><td class="n">0.6650</td><td class="n">66.7%</td><td class="n">100.0%</td><td class="n">1.647</td><td class="n">2.194</td></tr><tr><td class="">edge</td><td class="n">11</td><td class="n">0.3916</td><td class="n">0.6201</td><td class="n">63.6%</td><td class="n">90.9%</td><td class="n">1.757</td><td class="n">1.491</td></tr><tr><td class="">burst_isolated</td><td class="n">8</td><td class="n">0.4481</td><td class="n">0.5517</td><td class="n">50.0%</td><td class="n">87.5%</td><td class="n">2.042</td><td class="n">2.703</td></tr><tr><td class="">sports</td><td class="n">8</td><td class="n">0.3531</td><td class="n">0.6187</td><td class="n">50.0%</td><td class="n">100.0%</td><td class="n">2.558</td><td class="n">2.696</td></tr><tr><td class="">explicit</td><td class="n">7</td><td class="n">0.4545</td><td class="n">0.6491</td><td class="n">57.1%</td><td class="n">100.0%</td><td class="n">3.614</td><td class="n">3.500</td></tr></tbody></table></div>
+<p class="t">Arm = self. The blocks that were worst hit by the identity problem &mdash; sports
+(35.3% mean ECAPA), edge (39.2%) &mdash; are the ones conversion helps most. The two blocks it
+struggles with are <code>burst_isolated</code> and non-speech edge cases, where a speaker embedder
+has little to work with in the first place; two of the listenable failures below are of exactly that
+kind.</p>
+
+<h3>Does best-of-8 earn its 5.2&times;?</h3>
+<div class="fig"><div class=lg><span><i style="background:var(--s1)"></i>emotion strength of the winner</span><span><i style="background:var(--s2)"></i>ECAPA to the reference</span></div><svg viewBox="0 0 560 250" width="100%" role="img" style="max-width:560px"><line x1="58" y1="208.0" x2="542" y2="208.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="212.0" text-anchor="end" fill="var(--mut)" font-size="11">0.55</text><line x1="58" y1="159.5" x2="542" y2="159.5" stroke="var(--grid)" stroke-width="1"/><text x="51" y="163.5" text-anchor="end" fill="var(--mut)" font-size="11">0.60</text><line x1="58" y1="111.0" x2="542" y2="111.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="115.0" text-anchor="end" fill="var(--mut)" font-size="11">0.65</text><line x1="58" y1="62.5" x2="542" y2="62.5" stroke="var(--grid)" stroke-width="1"/><text x="51" y="66.5" text-anchor="end" fill="var(--mut)" font-size="11">0.70</text><line x1="58" y1="14.0" x2="542" y2="14.0" stroke="var(--grid)" stroke-width="1"/><text x="51" y="18.0" text-anchor="end" fill="var(--mut)" font-size="11">0.75</text><text x="58.0" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">1</text><text x="219.3" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">2</text><text x="380.7" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">4</text><text x="542.0" y="225" text-anchor="middle" fill="var(--mut)" font-size="11">8</text><text x="300" y="246" text-anchor="middle" fill="var(--mut)" font-size="11">candidates ranked over (k)</text><text x="12" y="111" text-anchor="middle" fill="var(--mut)" font-size="11" transform="rotate(-90 12 111)">score</text><polyline fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" points="58.0,166.3 219.3,146.8 380.7,146.2 542.0,130.7"/><circle cx="58.0" cy="166.3" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="219.3" cy="146.8" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="380.7" cy="146.2" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><circle cx="542.0" cy="130.7" r="4.5" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/><text x="58.0" y="155.3" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.593</text><text x="219.3" y="135.8" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.613</text><text x="380.7" y="135.2" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.614</text><text x="542.0" y="119.7" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.630</text><polyline fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" points="58.0,81.4 219.3,77.1 380.7,73.8 542.0,72.1"/><circle cx="58.0" cy="81.4" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><circle cx="219.3" cy="77.1" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><circle cx="380.7" cy="73.8" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><circle cx="542.0" cy="72.1" r="4.5" fill="var(--s2)" stroke="var(--card)" stroke-width="2"/><text x="58.0" y="70.4" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.681</text><text x="219.3" y="66.1" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.685</text><text x="380.7" y="62.8" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.688</text><text x="542.0" y="61.1" text-anchor="middle" fill="var(--fg)" font-size="10.5">0.690</text></svg>
+<div class="cap">Arm = self, raw candidates, ranked on z(target strength) + z(Overall&nbsp;Q) +
+z(ECAPA). Both curves are nearly flat.</div></div>
+<div class="scroll"><table class=""><thead><tr><th class="">k</th><th class="n">ECAPA</th><th class="n">above floor</th><th class="n">emotion strength</th><th class="n">Overall Q</th><th class="n">blend</th><th class="n">generation cost</th></tr></thead><tbody><tr><td class="">1</td><td class="n">0.6805</td><td class="n">97.74%</td><td class="n">0.5930</td><td class="n">3.1340</td><td class="n">2.3515</td><td class="n">1.0&times;</td></tr><tr><td class="">2</td><td class="n">0.6850</td><td class="n">97.74%</td><td class="n">0.6131</td><td class="n">3.1415</td><td class="n">2.3454</td><td class="n">1.6&times;</td></tr><tr><td class="">4</td><td class="n">0.6883</td><td class="n">98.02%</td><td class="n">0.6138</td><td class="n">3.1492</td><td class="n">2.3510</td><td class="n">2.8&times;</td></tr><tr><td class="">8</td><td class="n">0.6901</td><td class="n">98.31%</td><td class="n">0.6297</td><td class="n">3.1553</td><td class="n">2.3571</td><td class="n">5.2&times;</td></tr></tbody></table></div>
+<div class="note w"><b>On this corpus, best-of-8 is a poor trade.</b> Going from 1 candidate to 8
+costs <b>5.2&times;</b> the GPU time and buys +0.57&nbsp;pp above the floor, +6.2% emotion strength
+and +0.021 Overall&nbsp;Q. Most of what there is arrives by k=2 or k=4. The upstream
+<code>expressive_bestofn</code> recommendation of N=8 was derived on a different problem &mdash;
+converting 52 highly expressive source clips to one voice, where seed-to-seed variance is large. On
+converted corpus takes the candidate spread is small, because the source already fixes the content,
+the prosody and the timing; the decoder has little left to vary.
+<br><br>Both scenarios are costed at N=8 below, as asked, <b>and</b> at N=1, 2 and 4 &mdash; because
+the difference is a factor of five on a very large number.</div>
+
+<h3>SIDON on the converted output</h3>
+<div class="scroll"><table class=""><thead><tr><th class="">measure on the winning candidate</th><th class="n">change from SIDON</th></tr></thead><tbody><tr><td class="">ECAPA to the reference</td><td class="n"><span class="dn">-0.0412</span></td></tr><tr><td class="">WavLM to the reference</td><td class="n"><span class="dn">-0.0213</span></td></tr><tr><td class="">Overall Quality</td><td class="n"><span class="dn">-0.0557</span></td></tr><tr><td class="">Speech Quality</td><td class="n"><span class="dn">-0.0184</span></td></tr><tr><td class="">vocal-burst blend</td><td class="n"><span class="up">+0.2524</span></td></tr><tr><td class="">target emotion strength</td><td class="n"><span class="dn">-0.0005</span></td></tr></tbody></table></div>
+<div class="note b"><b>SIDON should be dropped from the output path.</b> On converted audio it costs
+quality rather than adding it: &minus;0.056 Overall&nbsp;Q, &minus;0.018 Speech&nbsp;Q,
+&minus;0.041 ECAPA and &minus;0.021 WavLM, buying only +0.25 blend. That is the expected result on
+reflection &mdash; SIDON is a restoration model for degraded recordings, and a fresh 24&nbsp;kHz
+HiFi-GAN output is not degraded. It belongs on the <i>reference</i> (conditionally), not on the
+product. Removing it saves 4.3% of the pipeline budget and improves the result.</div>
+
+<h2 id="listen">5 &middot; Listen</h2>
+<p>Original corpus take, then the same take converted to its own reference, to its nearest
+neighbour, and to a distant voice. The last three rows are deliberate failures.</p>
+<div class="scroll"><table><thead><tr><th>condition</th><th>original take</th>
+<th>&rarr; own reference</th><th>&rarr; nearest voice</th><th>&rarr; distant voice</th></tr></thead>
+<tbody><tr><td>Amusement<div class=t>emotion &middot; de &middot; 21.4s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Amusement__A__de.c041__source.mp3"></audio><div class=t>ECAPA 0.271 &middot; strength 2.71</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Amusement__A__de.c041__self.mp3"></audio><div class=t>ECAPA 0.882 &middot; strength 1.22</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Amusement__A__de.c041__nn.mp3"></audio><div class=t>mediathek_0236 &middot; ECAPA 0.816</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Amusement__A__de.c041__far.mp3"></audio><div class=t>k97_age4_bg0 &middot; ECAPA 0.436</div></td></tr><tr><td>Interest<div class=t>emotion &middot; de &middot; 9.8s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Interest__D__de.c041__source.mp3"></audio><div class=t>ECAPA 0.250 &middot; strength 2.32</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Interest__D__de.c041__self.mp3"></audio><div class=t>ECAPA 0.852 &middot; strength 2.38</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Interest__D__de.c041__nn.mp3"></audio><div class=t>mediathek_0236 &middot; ECAPA 0.745</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Interest__D__de.c041__far.mp3"></audio><div class=t>k97_age4_bg0 &middot; ECAPA 0.505</div></td></tr><tr><td>Confusion<div class=t>emotion &middot; en &middot; 9.8s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/anime_000__anime_000__E__Confusion__A__en.c024__source.mp3"></audio><div class=t>ECAPA 0.045 &middot; strength 1.18</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/anime_000__anime_000__E__Confusion__A__en.c024__self.mp3"></audio><div class=t>ECAPA 0.623 &middot; strength 0.83</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/anime_000__anime_000__E__Confusion__A__en.c024__nn.mp3"></audio><div class=t>anime_168 &middot; ECAPA 0.640</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/anime_000__anime_000__E__Confusion__A__en.c024__far.mp3"></audio><div class=t>refvoice_0885 &middot; ECAPA 0.483</div></td></tr><tr><td>edge<div class=t>edge &middot; en &middot; 12.2s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__X__ga_pain_groan__en.c004__source.mp3"></audio><div class=t>ECAPA 0.003 &middot; strength 0.00</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__X__ga_pain_groan__en.c004__self.mp3"></audio><div class=t>ECAPA 0.581 &middot; strength 0.00</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__X__ga_pain_groan__en.c004__nn.mp3"></audio><div class=t>k501_age4_bg1 &middot; ECAPA 0.557</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__X__ga_pain_groan__en.c004__far.mp3"></audio><div class=t>emolia_c0865 &middot; ECAPA 0.550</div></td></tr><tr><td>Thankfulness_Gratitude<div class=t>emotion &middot; de &middot; 10.5s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__E__Thankfulness_Gratitude__C__de.c015__source.mp3"></audio><div class=t>ECAPA 0.349 &middot; strength 3.26</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__E__Thankfulness_Gratitude__C__de.c015__self.mp3"></audio><div class=t>ECAPA 0.563 &middot; strength 2.88</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__E__Thankfulness_Gratitude__C__de.c015__nn.mp3"></audio><div class=t>k501_age4_bg1 &middot; ECAPA 0.312</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__E__Thankfulness_Gratitude__C__de.c015__far.mp3"></audio><div class=t>emolia_c0865 &middot; ECAPA 0.355</div></td></tr><tr><td>burst_isolated<div class=t>burst_isolated &middot; de &middot; 15.0s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/anime_000__anime_000__B__lip_smack__de.c010__source.mp3"></audio><div class=t>ECAPA 0.238 &middot; strength 2.94</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/anime_000__anime_000__B__lip_smack__de.c010__self.mp3"></audio><div class=t>ECAPA 0.447 &middot; strength 0.00</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/anime_000__anime_000__B__lip_smack__de.c010__nn.mp3"></audio><div class=t>anime_168 &middot; ECAPA 0.402</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/anime_000__anime_000__B__lip_smack__de.c010__far.mp3"></audio><div class=t>refvoice_0885 &middot; ECAPA 0.159</div></td></tr><tr><td>Concentration<div class=t>emotion &middot; de &middot; 14.2s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Concentration__D__de.c042__source.mp3"></audio><div class=t>ECAPA 0.529 &middot; strength 2.88</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Concentration__D__de.c042__self.mp3"></audio><div class=t>ECAPA 0.892 &middot; strength 2.20</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Concentration__D__de.c042__nn.mp3"></audio><div class=t>mediathek_0236 &middot; ECAPA 0.800</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Concentration__D__de.c042__far.mp3"></audio><div class=t>k97_age4_bg0 &middot; ECAPA 0.464</div></td></tr><tr><td>Thankfulness_Gratitude<div class=t>emotion &middot; de &middot; 10.1s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Thankfulness_Gratitude__A__de.c002__source.mp3"></audio><div class=t>ECAPA 0.694 &middot; strength 2.87</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Thankfulness_Gratitude__A__de.c002__self.mp3"></audio><div class=t>ECAPA 0.866 &middot; strength 2.56</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Thankfulness_Gratitude__A__de.c002__nn.mp3"></audio><div class=t>mediathek_0236 &middot; ECAPA 0.764</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__E__Thankfulness_Gratitude__A__de.c002__far.mp3"></audio><div class=t>k97_age4_bg0 &middot; ECAPA 0.425</div></td></tr><tr><td>voicenet<div class=t>voicenet &middot; en &middot; 1.8s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__V__VALS__extremely_low__en.c016__source.mp3"></audio><div class=t>ECAPA -0.128 &middot; strength 2.11</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__V__VALS__extremely_low__en.c016__self.mp3"></audio><div class=t>ECAPA -0.062 &middot; strength -0.38</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__V__VALS__extremely_low__en.c016__nn.mp3"></audio><div class=t>mediathek_0236 &middot; ECAPA -0.081</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__V__VALS__extremely_low__en.c016__far.mp3"></audio><div class=t>k97_age4_bg0 &middot; ECAPA 0.086</div></td></tr><tr><td>burst_isolated<div class=t>burst_isolated &middot; de &middot; 21.5s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__B__kissing_noises__de.c025__source.mp3"></audio><div class=t>ECAPA 0.058 &middot; strength 1.17</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__B__kissing_noises__de.c025__self.mp3"></audio><div class=t>ECAPA 0.062 &middot; strength 0.00</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__B__kissing_noises__de.c025__nn.mp3"></audio><div class=t>mediathek_0236 &middot; ECAPA 0.037</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/mediathek_0006__mediathek_0006__B__kissing_noises__de.c025__far.mp3"></audio><div class=t>k97_age4_bg0 &middot; ECAPA 0.026</div></td></tr><tr><td>burst_isolated<div class=t>burst_isolated &middot; de &middot; 16.2s</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__B__person_whistling_playfully__de.c003__source.mp3"></audio><div class=t>ECAPA 0.389 &middot; strength 2.23</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__B__person_whistling_playfully__de.c003__self.mp3"></audio><div class=t>ECAPA 0.567 &middot; strength 0.00</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__B__person_whistling_playfully__de.c003__nn.mp3"></audio><div class=t>k501_age4_bg1 &middot; ECAPA 0.251</div></td><td><audio controls preload="none" src="https://projects.laion.ai/moss-voice-profiles/audio_vcbon/k10_age3_bg1__k10_age3_bg1__B__person_whistling_playfully__de.c003__far.mp3"></audio><div class=t>emolia_c0865 &middot; ECAPA 0.291</div></td></tr></tbody></table></div>
+<p class="t">Audio is hosted outside the Space. 160&nbsp;kbps, <code>preload="none"</code>.</p>
+
+<h2 id="s1">6 &middot; Scenario 1 &mdash; convert all 20,125,736 samples</h2>
+<p>Every candidate in the 500-voice build, converted to its own reference. 842 condition groups per
+voice, 40,256 candidates per voice, 500 voices, mean clip 9.72&nbsp;s, &asymp;54,000 audio-hours.</p>
+<div class="scroll"><table class=""><thead><tr><th class="">N</th><th class="n">scenario 1 &mdash; 20,125,736 samples</th><th class="n"></th><th class="n"></th><th class="n">scenario 2 &mdash; 221,408,000 samples</th><th class="n"></th><th class="n"></th></tr></thead><tbody><tr><td class="">1</td><td class="n">977 GPU-h</td><td class="n">244 node-h</td><td class="n">0.066%</td><td class="n">10,746 GPU-h</td><td class="n">2,686 node-h</td><td class="n">0.730%</td></tr><tr><td class="">2</td><td class="n">1,538 GPU-h</td><td class="n">384 node-h</td><td class="n">0.104%</td><td class="n">16,919 GPU-h</td><td class="n">4,230 node-h</td><td class="n">1.149%</td></tr><tr><td class="">4</td><td class="n">2,730 GPU-h</td><td class="n">683 node-h</td><td class="n">0.185%</td><td class="n">30,038 GPU-h</td><td class="n">7,509 node-h</td><td class="n">2.040%</td></tr><tr><td class="">8</td><td class="n">5,044 GPU-h</td><td class="n">1,261 node-h</td><td class="n">0.343%</td><td class="n">55,493 GPU-h</td><td class="n">13,873 node-h</td><td class="n">3.769%</td></tr><tr><td class="">16</td><td class="n">9,540 GPU-h</td><td class="n">2,385 node-h</td><td class="n">0.648%</td><td class="n">104,951 GPU-h</td><td class="n">26,238 node-h</td><td class="n">7.129%</td></tr><tr><td class="">32</td><td class="n">18,573 GPU-h</td><td class="n">4,643 node-h</td><td class="n">1.262%</td><td class="n">204,330 GPU-h</td><td class="n">51,083 node-h</td><td class="n">13.879%</td></tr></tbody></table></div>
+<p class="t">GPU-h &times; 72 = core-h; 4 GH200 per node; budget is the 106&nbsp;Mcore-h REFORMO
+remainder. Node-hours assume all four GPUs busy, which the pilot's memory profile
+(12.4&nbsp;GB at the recommended setting) comfortably allows.</p>
+<div class="tiles">
+<div class="tile"><b>5,044</b><span>GPU-hours at N=8 &mdash;
+1,261 node-hours, 363&nbsp;kcore-h,
+<b>0.34%</b> of the remainder</span></div>
+<div class="tile"><b>977</b><span>GPU-hours at N=1 &mdash;
+0.066% of the remainder</span></div>
+<div class="tile"><b>1.1 d</b><span>wall clock at N=8 on 48 nodes,
+the cap the repair pipeline already runs at</span></div>
+</div>
+<p>Scenario 1 is cheap. At the recommended N=8 it is a third of a percent of the remaining budget
+and finishes in about a day at the concurrency this project already uses; at N=1 it is
+<b>977 GPU-hours</b>, which is noise. Nothing about scenario 1 is constrained by compute.</p>
+
+<h2 id="s2">7 &middot; Scenario 2 &mdash; deriving 5,500 further voices</h2>
+<p>For each voice with no corpus, find an existing profile whose reference is acoustically similar,
+then convert that profile's generated corpus to the new reference. There are 6,064 voice profiles
+in the pool and 500 have corpora, so the true remainder is <b>5,564</b>; the figures below use the
+requested 5,500.</p>
+
+<h3>The matching step is free</h3>
+<p>The 99-dimensional VoiceNet annotation for all 6,064 references already exists
+(<code>annotations/dims_enh.npy</code>, verified aligned to <code>voices.parquet</code> row by row).
+Z-scoring it and taking the full dense 6,064&times;6,064 distance matrix takes
+<b>0.48&nbsp;s</b> of CPU; the 5,564&times;500 argmin
+takes <b>0.026&nbsp;s</b> in
+<b>22&nbsp;MB</b>. Against a conversion job measured
+in tens of thousands of GPU-hours, matching is <b>0% of the cost</b> &mdash; which means every
+matching policy can be explored exhaustively before a single GPU is booked, and should be.</p>
+
+<h3>How good are the matches?</h3>
+<div class="fig"><div class=lg><span><i style="background:var(--s1)"></i>the 5,564 borrowers</span><span><i style="background:var(--s3)"></i>gold: nearest among all 6,064</span><span><i style="background:var(--mut)"></i>two random voices</span></div><svg viewBox="0 0 640 250" width="100%" role="img" style="max-width:640px"><line x1="52" y1="206.0" x2="624" y2="206.0" stroke="var(--grid)" stroke-width="1"/><text x="45" y="210.0" text-anchor="end" fill="var(--mut)" font-size="11">0</text><line x1="52" y1="146.0" x2="624" y2="146.0" stroke="var(--grid)" stroke-width="1"/><text x="45" y="150.0" text-anchor="end" fill="var(--mut)" font-size="11">400</text><line x1="52" y1="86.0" x2="624" y2="86.0" stroke="var(--grid)" stroke-width="1"/><text x="45" y="90.0" text-anchor="end" fill="var(--mut)" font-size="11">799</text><line x1="52" y1="26.0" x2="624" y2="26.0" stroke="var(--grid)" stroke-width="1"/><text x="45" y="30.0" text-anchor="end" fill="var(--mut)" font-size="11">1199</text><rect x="58.0" y="203.7" width="24.6" height="2.3" rx="3" fill="var(--s1)"/><rect x="85.9" y="196.8" width="24.6" height="9.2" rx="3" fill="var(--s1)"/><rect x="113.8" y="157.8" width="24.6" height="48.2" rx="3" fill="var(--s1)"/><rect x="141.7" y="81.7" width="24.6" height="124.3" rx="3" fill="var(--s1)"/><rect x="169.6" y="26.0" width="24.6" height="180.0" rx="3" fill="var(--s1)"/><rect x="197.5" y="53.2" width="24.6" height="152.8" rx="3" fill="var(--s1)"/><rect x="225.4" y="94.5" width="24.6" height="111.5" rx="3" fill="var(--s1)"/><rect x="253.3" y="132.4" width="24.6" height="73.6" rx="3" fill="var(--s1)"/><rect x="281.2" y="157.2" width="24.6" height="48.8" rx="3" fill="var(--s1)"/><rect x="309.1" y="176.0" width="24.6" height="30.0" rx="3" fill="var(--s1)"/><rect x="337.0" y="183.6" width="24.6" height="22.4" rx="3" fill="var(--s1)"/><rect x="364.9" y="193.2" width="24.6" height="12.8" rx="3" fill="var(--s1)"/><rect x="392.8" y="197.9" width="24.6" height="8.1" rx="3" fill="var(--s1)"/><rect x="420.7" y="199.7" width="24.6" height="6.3" rx="3" fill="var(--s1)"/><rect x="448.7" y="203.7" width="24.6" height="2.3" rx="3" fill="var(--s1)"/><rect x="476.6" y="204.6" width="24.6" height="1.4" rx="3" fill="var(--s1)"/><rect x="504.5" y="205.4" width="24.6" height="0.6" rx="3" fill="var(--s1)"/><rect x="532.4" y="205.4" width="24.6" height="0.6" rx="3" fill="var(--s1)"/><rect x="560.3" y="205.8" width="24.6" height="0.2" rx="3" fill="var(--s1)"/><rect x="588.2" y="205.8" width="24.6" height="0.2" rx="3" fill="var(--s1)"/><line x1="154.3" y1="20" x2="154.3" y2="206" stroke="var(--s3)" stroke-width="2" stroke-dasharray="5 4"/><line x1="204.7" y1="20" x2="204.7" y2="206" stroke="var(--s2)" stroke-width="2" stroke-dasharray="5 4"/><line x1="411.2" y1="20" x2="411.2" y2="206" stroke="var(--mut)" stroke-width="2" stroke-dasharray="5 4"/><text x="52.0" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">2</text><text x="115.6" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">4</text><text x="179.1" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">6</text><text x="242.7" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">8</text><text x="306.2" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">10</text><text x="369.8" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">12</text><text x="433.3" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">14</text><text x="496.9" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">16</text><text x="560.4" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">18</text><text x="624.0" y="223" text-anchor="middle" fill="var(--mut)" font-size="11">20</text><text x="338" y="246" text-anchor="middle" fill="var(--mut)" font-size="11">distance to the nearest voice that has a corpus (z-scored 99-dim VoiceNet, Euclidean)</text><text x="12" y="116" text-anchor="middle" fill="var(--mut)" font-size="11" transform="rotate(-90 12 116)">voices</text></svg>
+<div class="cap">Distance from each of the 5,564 voices to its nearest neighbour among the 500 that
+have corpora. Single mode near 6.1, long thin tail past 12.</div></div>
+<div class="scroll"><table class=""><thead><tr><th class="">distribution</th><th class="n">p5</th><th class="n">p25</th><th class="n">median</th><th class="n">p75</th><th class="n">p90</th><th class="n">p95</th></tr></thead><tbody><tr><td class=""><b>borrowed match</b> &mdash; 5,564 &rarr; the 500</td><td class="n">4.57</td><td class="n">5.77</td><td class="n"><b>6.81</b></td><td class="n">8.26</td><td class="n">10.07</td><td class="n">11.25</td></tr><tr><td class="">gold &mdash; nearest among all 6,064</td><td class="n">3.16</td><td class="n">4.18</td><td class="n">5.29</td><td class="n">6.86</td><td class="n">8.62</td><td class="n">9.66</td></tr><tr><td class="">same gender + language, otherwise random</td><td class="n">7.33</td><td class="n">10.17</td><td class="n">12.29</td><td class="n">14.72</td><td class="n">17.33</td><td class="n">19.02</td></tr><tr><td class="">two random voices</td><td class="n">8.51</td><td class="n">11.22</td><td class="n">13.30</td><td class="n">15.63</td><td class="n">18.15</td><td class="n">19.91</td></tr></tbody></table></div>
+<p>The median borrowed match is closer than <b>98.99%</b> of random voice pairs, which sounds
+excellent until it is compared against what a match <i>could</i> be. Using "nearest neighbour among
+all 6,064" as the gold standard:</p>
+<div class="scroll"><table class=""><thead><tr><th class="">quality of the borrowed match</th><th class="n">voices</th><th class="n">share of the 5,564</th></tr></thead><tbody><tr><td class="">as good as a typical best-possible match (&le; gold median)</td><td class="n">746</td><td class="n"><b>13.4%</b></td></tr><tr><td class="">&le; gold p75</td><td class="n">2,726</td><td class="n">49.0%</td></tr><tr><td class="">&le; gold p90</td><td class="n">4,320</td><td class="n">77.6%</td></tr><tr><td class=""><b>no closer than 1 random voice in 20</b> &mdash; effectively unmatched</td><td class="n"><b>1,245</b></td><td class="n"><b>22.4%</b></td></tr></tbody></table></div>
+<div class="note w"><b>Roughly one voice in five has no real match.</b> For 1,245 of the 5,564, the
+"nearest" voice with a corpus is no nearer than a voice picked at random would be one time in
+twenty. The pilot's <b>far</b> arm is what those look like: 61.9% of already-good takes fall below
+the floor, and the arm ends up no better than the unconverted corpus. Those voices should be
+excluded, not shipped.
+<br><br>Categorical metadata is not a substitute for this measurement: matching on gender and
+language alone moves the median distance only from 13.30 to 12.29, against 6.81 for a real acoustic
+match. And the acoustic match itself gets gender wrong <b>29.5%</b>
+of the time (language, where both are known, agrees 97.8%;
+mean age difference 11.5 years). A hard gender constraint on the
+matcher costs nothing to add and should be added.</div>
+
+<h3>Diversity collapses faster than the headcount suggests</h3>
+<div class="scroll"><table class=""><thead><tr><th class="">fan-out of the 500 seed voices</th><th class="n">value</th></tr></thead><tbody><tr><td class="">seeds never chosen by anybody</td><td class="n">53 of 500</td></tr><tr><td class="">largest fan-out (one seed's corpus reused)</td><td class="n"><b>126 times</b></td></tr><tr><td class="">median fan-out</td><td class="n">5</td></tr><tr><td class="">p90 fan-out</td><td class="n">27</td></tr><tr><td class="">share of the 5,564 descending from the top 50 seeds</td><td class="n"><b>48.3%</b></td></tr><tr><td class="">Gini coefficient of the fan-out</td><td class="n">0.638</td></tr></tbody></table></div>
+<p>Half of the 5,500 derived corpora would descend from 50 source voices. Every take in a derived
+corpus carries the <i>source</i> speaker's prosody, timing and performance choices; only the timbre
+is new. So 5,500 derived profiles are not 5,500 performances &mdash; they are 500 performances
+wearing 5,500 voices, and half of them wearing one of 50.</p>
+
+<h3>Would a larger seed pool help? Barely.</h3>
+<div class="scroll"><table class=""><thead><tr><th class="">seed pool</th><th class="n">median distance still-borrowing voices must accept</th></tr></thead><tbody><tr><td class="">500 <span class=t>(today)</span></td><td class="n">6.81</td></tr><tr><td class="">1,000</td><td class="n">6.05</td></tr><tr><td class="">2,000</td><td class="n">5.68</td></tr><tr><td class="">3,000</td><td class="n">5.48</td></tr><tr><td class="">gold standard (all 6,064 available)</td><td class="n">5.22</td></tr></tbody></table></div>
+<p class="t">Extra seeds drawn at random; farthest-point sampling was also tried and did
+<i>worse</i> at 1,000 and 2,000, because it spends the budget on acoustic outliers nobody is near.
+Six times the generation cost buys a 20% reduction in median match distance. The 500-voice pool is
+not the bottleneck &mdash; the reference population is simply sparse in this space.</p>
+
+<h3>What it costs</h3>
+<p><b>5,500 &times; 40,256 &times; 8 = 1,771,264,000 candidates</b>, from 221,408,000 samples.
+That is the number, plainly. It is 11&times; scenario 1.</p>
+<div class="tiles">
+<div class="tile"><b>55,493</b><span>GPU-hours at N=8 &mdash;
+13,873 node-hours, 4.00&nbsp;Mcore-h,
+<b>3.77%</b> of the remainder</span></div>
+<div class="tile"><b>10,746</b><span>GPU-hours at N=1 &mdash;
+0.73% of the remainder</span></div>
+<div class="tile"><b>12 d</b><span>wall clock at N=8 on 48
+nodes; 2.3&nbsp;d at N=1</span></div>
+</div>
+<p>Scenario 2 is affordable in budget terms &mdash; 3.8% of the remainder at N=8, 0.73% at N=1 &mdash;
+and both scenarios together at N=8 come to <b>60,537 GPU-hours, 15,134 node-hours,
+4.36&nbsp;Mcore-h, 4.11% of the remainder</b>. Compute is not what should decide this. The
+21-day wall clock and the 43&nbsp;TB are more real, and the quality argument is more real still.</p>
+
+<h2 id="arch">8 &middot; Storage, and keeping both versions</h2>
+<div class="scroll"><table class=""><thead><tr><th class=""></th><th class="n">scenario 1</th><th class="n">scenario 2</th><th class="n">both</th></tr></thead><tbody><tr><td class="">samples</td><td class="n">20,125,736</td><td class="n">221,408,000</td><td class="n">241,533,736</td></tr><tr><td class="">candidates generated (N=8)</td><td class="n">161,005,888</td><td class="n"><b>1,771,264,000</b></td><td class="n">1,932,269,888</td></tr><tr><td class="">audio hours kept</td><td class="n">54,339</td><td class="n">597,802</td><td class="n">652,141</td></tr><tr><td class="">audio, winner only @160 kbps</td><td class="n">3.91 TB</td><td class="n">43.04 TB</td><td class="n"><b>47.0 TB</b></td></tr><tr><td class="">provenance parquet (winner)</td><td class="n">24 GB</td><td class="n">266 GB</td><td class="n">290 GB</td></tr><tr><td class="">scores for all 8 candidates (no audio)</td><td class="n">56 GB</td><td class="n">620 GB</td><td class="n">676 GB</td></tr><tr><td class="">if every candidate's audio were kept</td><td class="n">31 TB</td><td class="n">344 TB</td><td class="n">376 TB</td></tr></tbody></table></div>
+<p>The converted corpus is roughly the same size as the original per sample (mp3 at the same
+160&nbsp;kbps), so scenario 1 doubles the corpus to 7.8&nbsp;TB and scenario 2 adds a further
+43&nbsp;TB &mdash; a <b>13&times;</b> growth of the footprint. Keeping every candidate's audio would
+cost 375&nbsp;TB and buys nothing: the losing candidates are only useful as scores, and those fit in
+676&nbsp;GB for both scenarios combined.</p>
+
+<h3>The proposed layout</h3>
+<p>Nothing is deleted and nothing is written into an existing run directory. Converted audio lands
+in a sibling tree, keyed so that provenance is recoverable from the key alone:</p>
+<pre>vprof/vp500/&lt;voice&gt;/PPILOT2/            # untouched, byte for byte
+    cands-{000..003}.tar
+    meta-{000..003}-&lt;ts&gt;.parquet
+
+vprof/vc500/&lt;voice&gt;/VC1/                # scenario 1: converted to its own reference
+    conv-{000..003}.tar                 # WebDataset: &lt;key&gt;.mp3 + &lt;key&gt;.json
+    prov-{000..003}.parquet             # one row per shipped clip
+    cand-{000..003}.parquet             # all 8 candidates' scores, no audio
+    REF.json                            # prepared reference: sha256, lufs_pre/post, sidon flag
+    VC.DONE
+
+vprof/vcderived/&lt;new_voice&gt;/VC1/        # scenario 2: borrowed from another voice
+    ... same shape, plus source_voice and match_distance in REF.json
+
+key = &lt;target_voice&gt;/&lt;source_voice&gt;/&lt;gid with | as __&gt;.c&lt;NNN&gt;.k&lt;J&gt;</pre>
+<p>Four properties this buys:</p>
+<ol>
+<li><b>The join key is <code>(run_dir, audio_key)</code>, never <code>audio_key</code> alone.</b>
+<code>audio_key</code> is not unique across runs &mdash; this project has already served the wrong
+run's audio to a page once because of it. <code>prov-*.parquet</code> stores
+<code>source_run_dir</code> as a column, which the corpus parquet does not, so a converted row can
+always be traced back to exactly one original take.</li>
+<li><b>The WebDataset key is self-describing.</b> Target voice, source voice, group, source candidate
+and conversion candidate index are all recoverable from the member name, so a tar that has drifted
+away from its parquet is still interpretable.</li>
+<li><b>Per-clip provenance travels with the audio</b> in the <code>.json</code> sidecar: source run
+and key, target voice, candidate index, rank, and every score used to rank it, plus ECAPA and WavLM
+against both the prepared and the original reference.</li>
+<li><b>Selection is a view, not a copy.</b> One manifest parquet lists
+<code>(variant, voice, run_dir, key)</code> for original and converted alike. A consumer that wants
+"the original unless it was below the floor, then the converted one" expresses that as a filter over
+scores that are already in the table, and the answer changes without moving a byte. Old and new
+coexist permanently and no policy decision is baked into the storage.</li>
+</ol>
+<p>The reference itself is versioned: <code>REF.json</code> records the sha256 of the prepared
+reference, its measured loudness before and after, and whether SIDON was applied. If the SIDON rule
+changes, the affected corpora are identifiable without re-listening.</p>
+
+<h2 id="vs">9 &middot; Versus the LoRA identity repair</h2>
+<p>A separate effort attacks the same problem by training a rank-4 identity LoRA per voice and
+regenerating below-floor takes. Both were measured with the same ECAPA sensor and the same floor:</p>
+<div class="scroll"><table class=""><thead><tr><th class=""></th><th class="n">rank-4 LoRA repair</th><th class="n">voice conversion (self arm)</th></tr></thead><tbody><tr><td class="">population</td><td class="n">below-floor takes, 93 voices reported</td><td class="n">below-floor takes, 4 voices, n=131</td></tr><tr><td class="">ECAPA before &rarr; after</td><td class="n">0.2518 &rarr; 0.5493</td><td class="n"><b>0.2460 &rarr; 0.5528</b></td></tr><tr><td class="">above the 0.40 floor</td><td class="n">0.27% &rarr; 84.2%</td><td class="n"><b>0% &rarr; 95.4%</b></td></tr><tr><td class="">target strength</td><td class="n"><span class="dn">&minus;49%</span></td><td class="n"><span class="dn">&minus;51%</span></td></tr><tr><td class="">blend</td><td class="n"><span class="dn">&minus;9.8%</span></td><td class="n"><span class="up">+25.2%</span></td></tr><tr><td class="">genuineness</td><td class="n"><span class="dn">&minus;13.0%</span></td><td class="n"><span class="up">+16.2%</span></td></tr><tr><td class="">per-voice training required</td><td class="n">yes &mdash; 6 epochs, ~16 GPU-h/voice</td><td class="n"><b>no</b></td></tr><tr><td class="">cost to treat the whole 500-voice build</td><td class="n">~7,926 GPU-h <span class=t>(8.18 M below-floor takes)</span></td><td class="n"><b>977&ndash;5,044 GPU-h</b> <span class=t>(all 20.1 M, N=1&ndash;8)</span></td></tr></tbody></table></div>
+<div class="note"><b>Voice conversion reaches a higher floor-crossing rate on all 20.1&nbsp;M takes
+for roughly one-eighth of the GPU cost the LoRA path needs for the 8.2&nbsp;M failures alone, at a
+comparable expression cost and with better blend and genuineness.</b> It also needs no per-voice
+training run, no held-out group management, and no per-voice adapter to ship and version.
+<br><br>The two are not equivalent, though, and the difference is not in the numbers. The LoRA
+<i>regenerates</i> the take: the result is a new performance by a model that has been nudged toward
+the target identity, and it is still a synthesis of that voice. Conversion <i>resynthesises</i> an
+existing take's content through a different timbre &mdash; the performance is the old one, the voice
+is new. For scenario 1 those converge, because the target identity is the take's own. The
+comparison here is between two costs paid for the same repair; it is not evidence that conversion
+is the better artistic object. The caveats are symmetric: both were measured on the sensor that
+defines the problem.</div>
+
+<h2 id="rec">10 &middot; Recommendation</h2>
+<div class="rec">
+<h3>Do scenario 1. Do not do scenario 2 as specified.</h3>
+<p><b>Scenario 1 &mdash; run it, at N=4, without SIDON on the output.</b> 2,730 GPU-hours, 683
+node-hours, 0.19% of the remainder, about 15 hours on 48 nodes, 3.9&nbsp;TB. It takes the whole
+corpus from 63% above the identity floor to ~98%, improves the takes that were already fine, needs
+no per-voice training, and costs a third of what the LoRA path costs for a subset of the same job.
+N=4 rather than N=8 because best-of-8 buys +0.6&nbsp;pp above the floor and +6% emotion strength for
+5.2&times; the compute; if the extra 0.02 Overall&nbsp;Q matters, N=8 is still only 0.34% of the
+remainder.</p>
+<p><b>Ship it beside the original, never over it</b>, with the per-clip provenance and the
+score-driven view in &sect;8, and label every converted clip as expression-attenuated. The corpus
+then contains two versions of every take and the choice between them is a filter, made downstream,
+reversibly.</p>
+<p><b>Scenario 2 &mdash; do not run it at 5,500 voices.</b> The compute is affordable (3.8% of the
+remainder at N=8, 0.73% at N=1) and that is not the objection. The objections are:</p>
+<ul>
+<li><b>1,245 of the 5,564 have no real acoustic match.</b> The pilot's far arm shows what those
+produce: an arm that ends up no better than the unconverted corpus, with 38% of previously-good
+takes falling below the floor.</li>
+<li><b>The derived corpora are not new performances.</b> Prosody, timing and acting choices come
+from the source voice. Half of the 5,500 would descend from 50 seeds. Calling the result "5,500
+voice profiles" would overstate what the dataset contains by a large factor.</li>
+<li><b>The emotion attenuation compounds.</b> A derived corpus is already 50% down on emotion
+strength <i>and</i> is a different speaker's performance. For the emotion block &mdash; 320 of 842
+groups &mdash; that is close to losing the condition.</li>
+</ul>
+<p><b>The version worth running instead:</b> restrict to the borrowers with a genuinely close match,
+add a hard gender constraint, and cap fan-out so no seed is reused more than ~20 times. Taking the
+49.0% whose match is at or better than the gold p75 gives <b>~2,700 voices</b> at
+<b>14,719 GPU-hours</b> at N=4 (0.99% of the remainder, 21&nbsp;TB) and
+a defensible claim about every one of them. That is a much better dataset than 5,500 voices of which
+a fifth are arbitrary.</p>
+</div>
+
+<h3>Risks</h3>
+<ul>
+<li><b>The 0.40 floor is the sensor this is optimised against, and it is a convention.</b>
+An independent WavLM embedder already disagrees with it on three-quarters of the corpus's selected
+"failures". Conversion is being scored on the metric that defines the problem, which is
+circular. The WavLM numbers here agree that conversion works, which is reassuring but not
+independent validation &mdash; neither embedder is a listener. <b>A human listening test on a few
+hundred pairs is the missing evidence</b>, and it is cheap next to 5,000 GPU-hours.</li>
+<li><b>The expression loss is measured on the same emonet that steered the generation.</b> A
+&minus;51% emonet score is strong evidence of attenuation but is not calibrated to perception;
+the true perceptual loss could be larger or smaller.</li>
+<li><b>Four voices, 354 takes.</b> The pilot spans the severity range well but the per-block and
+per-arm cells are small (7&ndash;12 takes for explicit, sports, edge). The headline self-arm result
+rests on 131 below-floor takes. Widen to ~20 voices before committing 5,000 GPU-hours.</li>
+<li><b>Conversion inherits the source take's defects.</b> If a take is unintelligible or truncated,
+the converted take is unintelligible or truncated in a new voice. Nothing in the reward catches
+this &mdash; WER was not re-measured in the pilot. Add an ASR gate before shipping.</li>
+<li><b>Non-speech takes are not helped and may be harmed.</b> Isolated vocal bursts reach only
+87.5% above floor and 2 of the 11 listenable examples are outright failures. The
+<code>burst_isolated</code> and non-speech <code>edge</code> groups should be excluded from
+conversion rather than shipped weak.</li>
+<li><b>SIDON on the reference costs 0.06 ECAPA.</b> The pilot applied it to all 500. The
+conditional rule (restore only low-quality references) is supported by the data here but has not
+itself been run end to end.</li>
+<li><b>Storage.</b> 47&nbsp;TB is a filesystem decision, not a compute one, and the scenario-2 share
+of it (43&nbsp;TB) is being spent on the least defensible half of the plan.</li>
+</ul>
+
+<h2 id="limits">11 &middot; What is not verified here</h2>
+<ul>
+<li>No human listening test. Every quality claim is model-scored.</li>
+<li>WER / intelligibility of converted takes was not measured.</li>
+<li>The LoRA comparison is against that pipeline's published aggregate over 93 voices, not a
+matched re-run on the same 4 voices and 131 takes. It is indicative, not a controlled comparison.</li>
+<li>Scenario-2 quality is measured on 4 source voices with one nearest and one distant target each
+&mdash; 8 pairs. The correlation of &minus;0.755 between distance and achieved identity is
+suggestive at that n, not established.</li>
+<li>The cost model assumes the measured 9.72&nbsp;s mean clip and linear scaling in sample count. It
+does not include tar/parquet write bandwidth at 47&nbsp;TB, decode of the source corpus from its
+tars, or job scheduling overhead &mdash; on the pilot, source decode was under 1% of wall time, but
+at scale the read side of 3.9&nbsp;TB is not free.</li>
+<li>Multi-GPU and multi-node scaling was not measured. Node-hours assume perfect 4-GPU packing.</li>
+</ul>
+
+<h2>Reproducing</h2>
+<pre>vcbon/code/vcengine.py       batched VC, batched SIDON, batched embedders, PyAV mp3
+vcbon/code/prep_refs.py      SIDON + EBU R128 reference preparation, with verification
+vcbon/code/ref_ablate.py     the 5-arm reference ablation and the TF32 check
+vcbon/code/bench_gen.py      generation throughput sweep + packing-correctness check
+vcbon/code/bench_pipeline.py end-to-end configuration arms and the N cost curve
+vcbon/code/pilot.py          the 3-arm pilot (WebDataset tar + provenance parquet)
+vcbon/code/analyse.py        the quality tables on this page
+vcbon/code/costmodel.py      GPU-hours, node-hours, budget share, storage</pre>
+<p class="t">Measured on one NVIDIA GH200 (JUPITER Booster, account reformo), torch 2.8.0+cu129,
+chatterbox 0.1.7. Raw JSON for every table on this page is under <code>vcbon/out/</code>.</p>
+
+</div>

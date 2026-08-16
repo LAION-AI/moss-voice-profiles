@@ -35,6 +35,12 @@ intensity/containment settings, every VoiceNet dimension at four levels, edge ca
 variants — in English <b>and</b> German, from the same sentence.</p>
 
 <div class=cards>
+<a class=c href="vc_bestofn.html"><b>Best-of-N voice conversion + SIDON, costed &rarr;</b>
+<span>A one-GPU pilot over the 500-voice corpus, optimised to 0.251 GPU-h per 1,000 samples (1.9&times;).
+Converting a take to its own reference lifts 0 &rarr; 95.4% of below-floor takes over the 0.40 ECAPA
+floor &mdash; and halves the emotion strength doing it. Both scenarios priced: 20.1 M samples
+(5,044 GPU-h) and the 5,500-voice extrapolation (55,493 GPU-h, 1.77 billion candidates), with the
+match-quality distribution that decides whether the second one is worth running.</span></a>
 <a class=c href="manual.html"><b>Design manual →</b>
 <span>What this is, why, and every detail needed to reproduce it: the condition matrix, which LoRA
 at which merge strength for which emotion and dimension, prompt templates, ranking formulas,
