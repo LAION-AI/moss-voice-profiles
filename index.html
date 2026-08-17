@@ -35,6 +35,15 @@ intensity/containment settings, every VoiceNet dimension at four levels, edge ca
 variants — in English <b>and</b> German, from the same sentence.</p>
 
 <div class=cards>
+<a class=c href="vc_scenario1.html"><b>Scenario 1 in production: best-of-4 with SIDON &rarr;</b>
+<span>The pilot, run for real over all 20,125,736 takes and 500 voices. Four conversions each,
+SIDON on all four, then ranked on the restored audio by
+normalise(target emotion) + normalise(quality) &mdash; with every candidate, every score and
+three competing rewards kept, so selection stays a query rather than a re-run. Ranking after
+restoration beats ranking before it (+0.028 target emotion, +0.009 Overall-Q, and the two orders
+disagree on 53% of takes); the reward recovers 39&ndash;104% of the emotion conversion destroys.
+Includes the measurement that the published 38.3&nbsp;ms/clip SIDON figure assumed TF32 that the
+quality rule forbids.</span></a>
 <a class=c href="vc_bestofn.html"><b>Best-of-N voice conversion + SIDON, costed &rarr;</b>
 <span>A one-GPU pilot over the 500-voice corpus, optimised to 0.251 GPU-h per 1,000 samples (1.9&times;).
 Converting a take to its own reference lifts 0 &rarr; 95.4% of below-floor takes over the 0.40 ECAPA
