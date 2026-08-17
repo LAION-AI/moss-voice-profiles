@@ -41,9 +41,11 @@ SIDON on all four, then ranked on the restored audio by
 normalise(target emotion) + normalise(quality) &mdash; with every candidate, every score and
 three competing rewards kept, so selection stays a query rather than a re-run. Ranking after
 restoration beats ranking before it (+0.028 target emotion, +0.009 Overall-Q, and the two orders
-disagree on 53% of takes); the reward recovers 39&ndash;104% of the emotion conversion destroys.
-Includes the measurement that the published 38.3&nbsp;ms/clip SIDON figure assumed TF32 that the
-quality rule forbids.</span></a>
+disagree on 53% of takes); the reward recovers 34&ndash;104% of the emotion conversion destroys,
+about 80% of what an oracle could reach at N=4. Measured at 0.784&nbsp;s per sample &mdash;
+4,381&nbsp;GPU-h, 22.8&nbsp;h on 48 nodes, 14.4&nbsp;TB &mdash; against a 3,588&nbsp;GPU-h plan whose
+generation term was exact and whose SIDON term assumed a TF32 setting the quality rule
+forbids.</span></a>
 <a class=c href="vc_bestofn.html"><b>Best-of-N voice conversion + SIDON, costed &rarr;</b>
 <span>A one-GPU pilot over the 500-voice corpus, optimised to 0.251 GPU-h per 1,000 samples (1.9&times;).
 Converting a take to its own reference lifts 0 &rarr; 95.4% of below-floor takes over the 0.40 ECAPA

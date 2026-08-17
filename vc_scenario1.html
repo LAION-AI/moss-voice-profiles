@@ -27,7 +27,7 @@ a{color:var(--acc)}
 <h1>Scenario 1 &mdash; best-of-4 voice conversion, SIDON on all four, reward ranking</h1>
 <p class="sub">20,125,736 source takes across 500 voices
 &middot; 2,000 shards &middot; N=4 candidates &middot; every candidate kept</p>
-
+<p class="run"><b>Run state</b> &mdash; 1 of 2,000 shards complete (0.05%), 0 worker nodes, 3 shards in flight. Updated 2026-08-17 04:56.</p>
 
 <h2>What the pipeline does</h2>
 <pre>for each of the 20,125,736 source takes:
@@ -77,6 +77,7 @@ arbitrary pick) or identity (ECAPA unchanged to 4 dp).</p>
 
 <h2>SIDON before ranking vs after &mdash; measured</h2>
 <p class="t">Diagnostic. The pipeline order is fixed; this measures what the choice buys.
+Measured on the normalisation pass (17 shards, 33,692 sources).
 Both arms are judged on the SIDON-enhanced audio, because that is what ships in
 either case &mdash; the only difference is which candidate was chosen.</p>
 <div class="tw"><table>
@@ -108,18 +109,18 @@ i.e. the ceiling any reward could reach at N=4.</p>
 <tr><th>target</th><th class=n>sources</th><th class=n>source</th><th class=n>arbitrary</th>
 <th class=n>reward</th><th class=n>oracle&nbsp;best-of-4</th>
 <th class=n>gap&nbsp;recovered</th><th class=n>of&nbsp;oracle</th></tr>
-<tr><td>emo</td><td class=n>14,036</td><td class=n>1.034</td><td class=n>0.877</td><td class=n>0.938</td><td class=n>0.953</td><td class=n>38.7%</td><td class=n>79.7%</td></tr><tr><td>dim</td><td class=n>15,280</td><td class=n>0.241</td><td class=n>0.148</td><td class=n>0.245</td><td class=n>0.271</td><td class=n>104.0%</td><td class=n>79.1%</td></tr>
+<tr><td>emo</td><td class=n>7,824</td><td class=n>0.890</td><td class=n>0.685</td><td class=n>0.755</td><td class=n>0.771</td><td class=n>34.0%</td><td class=n>80.5%</td></tr><tr><td>dim</td><td class=n>1,728</td><td class=n>0.152</td><td class=n>0.113</td><td class=n>0.205</td><td class=n>0.241</td><td class=n>234.6%</td><td class=n>71.6%</td></tr>
 </table></div>
 
 <h2>Throughput, measured against the 3,588 GPU-h plan</h2>
 <div class="tw"><table>
 <tr><th></th><th class=n>planned</th><th class=n>measured</th></tr>
-<tr><td>s per source sample</td><td class=n>0.642</td><td class=n>&mdash;</td></tr>
-<tr><td>SIDON ms per clip</td><td class=n>38.3</td><td class=n>51.4</td></tr>
-<tr><td>GPU-h, full run</td><td class=n>3,588</td><td class=n>4,924</td></tr>
-<tr><td>core-h</td><td class=n>258,300</td><td class=n>354,552</td></tr>
-<tr><td>hours on 48 nodes</td><td class=n>18.7</td><td class=n>25.6</td></tr>
-<tr><td>output, TB</td><td class=n>15.6</td><td class=n>3.2</td></tr>
+<tr><td>s per source sample</td><td class=n>0.642</td><td class=n>0.784</td></tr>
+<tr><td>SIDON ms per clip</td><td class=n>38.3</td><td class=n>46.7</td></tr>
+<tr><td>GPU-h, full run</td><td class=n>3,588</td><td class=n>4,381</td></tr>
+<tr><td>core-h</td><td class=n>258,300</td><td class=n>315,412</td></tr>
+<tr><td>hours on 48 nodes</td><td class=n>18.7</td><td class=n>22.8</td></tr>
+<tr><td>output, TB</td><td class=n>15.6</td><td class=n>14.4</td></tr>
 </table></div>
 <div class="note"><b>The SIDON budget line and the SIDON quality rule were inconsistent.</b>
 The plan's 857 GPU-h assumes 38.3 ms/clip. Measured on identical clips:
@@ -132,7 +133,7 @@ that TF32 on SIDON costs quality, so TF32 stays off and the budget moves. The tw
 outputs differ by 40.7 dB SNR (worst clip
 30.4 dB).</div>
 <h3>Where the time goes</h3>
-<div class="tw"><table><tr><th>stage</th><th class=n>share of wall</th></tr><tr><td>generate</td><td class=n>53.9%</td></tr><tr><td>sidon</td><td class=n>23.3%</td></tr><tr><td>presidon_score</td><td class=n>10.2%</td></tr><tr><td>decode</td><td class=n>7.4%</td></tr><tr><td>score</td><td class=n>7.1%</td></tr><tr><td>spk</td><td class=n>2.7%</td></tr><tr><td>tokenize</td><td class=n>1.0%</td></tr><tr><td>mp3</td><td class=n>0.8%</td></tr><tr><td>io</td><td class=n>0.4%</td></tr></table></div>
+<div class="tw"><table><tr><th>stage</th><th class=n>share of wall</th></tr><tr><td>generate</td><td class=n>62.3%</td></tr><tr><td>sidon</td><td class=n>23.8%</td></tr><tr><td>score</td><td class=n>8.3%</td></tr><tr><td>decode</td><td class=n>5.4%</td></tr><tr><td>spk</td><td class=n>2.6%</td></tr><tr><td>tokenize</td><td class=n>1.7%</td></tr><tr><td>io</td><td class=n>0.4%</td></tr><tr><td>mp3</td><td class=n>0.3%</td></tr><tr><td>presidon_score</td><td class=n>0.0%</td></tr></table></div>
 
 <h2>Where the data is</h2>
 <pre>vprof/vc500/&lt;voice&gt;/VC1/vc-&lt;NNN&gt;.tar        all 4 candidates, 48 kHz mp3, WebDataset
@@ -156,6 +157,6 @@ vcbon/prod/code/vcsidonbench.py the SIDON TF32 measurement
 vcbon/PROTOCOL.md               the running log: decisions, failures, what was learned</pre>
 <p class="t">JUPITER Booster, account reformo, 4&times;GH200 per node, torch 2.8.0+cu129.
 Raw JSON for every table is under <code>vcbon/prod/out/</code>.
-Generated 2026-08-17 02:23.</p>
+Generated 2026-08-17 04:56.</p>
 
 </div></body></html>
