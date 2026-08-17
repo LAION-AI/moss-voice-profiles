@@ -35,6 +35,16 @@ intensity/containment settings, every VoiceNet dimension at four levels, edge ca
 variants — in English <b>and</b> German, from the same sentence.</p>
 
 <div class=cards>
+<a class=c href="emotion_trajectories.html"><b>Emotion-trajectory path map (listen) &rarr;</b>
+<span>Which emotional journeys the corpus can actually support, mapped in the space the emotion
+scorer <em>measured</em> rather than the space the prompt labels claim. Normalising the 40 dimensions
+over all 20,084,175 takes inflates every distance by 2.09&times;, so the step limits of 1.5 and 1.6
+turn out to be a <b>tightening</b> of the old 1.3, not a relaxation &mdash; taken literally they leave
+98.7% and 97.4% of the 1,560 ordered emotion pairs unreachable. Rescaled, both cover all 1,560.
+A single clip sits 6.12 units from its own condition's centre while two different conditions are
+5.00 apart, so per-clip emotion is noise-dominated and the map only exists in the aggregate.
+100 assembled listening examples, half at each threshold, including six pairs built in both
+directions. <b>None of it validated by ear</b> &mdash; that is what the audio is for.</span></a>
 <a class=c href="vc_scenario1.html"><b>Scenario 1 in production: best-of-4 with SIDON &rarr;</b>
 <span>The pilot, run for real over all 20,125,736 takes and 500 voices. Four conversions each,
 SIDON on all four, then ranked on the restored audio by
