@@ -1,0 +1,1522 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voice-acting collages — dataset plan</title>
+<style>
+:root{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--acc:#7c3aed;--good:#15803d;--bad:#b91c1c;--warn:#a16207;--card:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--card:#1b1a22}}
+:root[data-theme=dark]{--bg:#14131a;--fg:#e9e7e4;--mut:#9a968e;--line:#2c2a33;--acc:#a78bfa;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;--card:#1b1a22}
+:root[data-theme=light]{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b6862;--line:#e3e0da;--acc:#7c3aed;--good:#15803d;--bad:#b91c1c;--warn:#a16207;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;padding:0 20px 90px}
+.wrap{max-width:960px;margin:0 auto}
+h1{font-size:32px;margin:44px 0 6px;letter-spacing:-.02em}
+h2{font-size:23px;margin:52px 0 12px;padding-top:20px;border-top:1px solid var(--line)}
+h3{font-size:18px;margin:30px 0 8px}
+.sub{color:var(--mut);font-size:15px;margin:0 0 26px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;display:block;overflow-x:auto}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;white-space:nowrap}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mut)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+td.w{white-space:normal;min-width:260px}
+tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:11px;padding:15px 19px;margin:18px 0}
+.note.w{border-left-color:var(--warn)}
+.note.b{border-left-color:var(--bad)}
+.note.g{border-left-color:var(--good)}
+.note b.h{display:block;margin-bottom:5px}
+code{background:rgba(124,58,237,.11);padding:1px 5px;border-radius:4px;font:13px ui-monospace,SFMono-Regular,monospace}
+pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font:12.8px/1.55 ui-monospace,SFMono-Regular,monospace}
+ul,ol{margin:10px 0;padding-left:24px}li{margin:7px 0}
+a{color:var(--acc)}
+.m{color:var(--good);font-weight:600}.e{color:var(--warn);font-weight:600}
+.tag{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:20px;border:1px solid var(--line);color:var(--mut);vertical-align:2px}
+.tag.m{border-color:var(--good);color:var(--good)}
+.tag.e{border-color:var(--warn);color:var(--warn)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 22px;margin:24px 0;font-size:14.5px;columns:2;column-gap:34px}
+.toc li{margin:4px 0;break-inside:avoid}
+.arc{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;font-size:13.5px}
+.arc div{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 12px;flex:1;min-width:130px}
+.arc div b{display:block;color:var(--acc);font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+.plane{width:100%;height:auto;max-width:660px;display:block;margin:18px auto}
+figcaption{color:var(--mut);font-size:13px;text-align:center;margin-top:-6px}
+</style>
+<div class=wrap>
+
+<h1>Voice-acting collages</h1>
+<p class=sub>A dataset of short performances stitched from many takes by the same voice, arranged so
+the emotion <b>moves</b> across the clip instead of sitting still. This page measures what source
+material exists, prices three build scales, writes the procedural rules a builder would implement,
+and recommends one design. <br>
+Written 2026-08-16 on JUPITER. Every number is marked <span class="tag m">measured</span> or
+<span class="tag e">estimated</span>; measured ones say which file they came from.</p>
+
+<div class=note>
+<b class=h>The 60-second version</b>
+Take 3–6 short clips spoken by one voice, trim the silence off their ends, glue them together, and
+you get a single 40-second performance that starts angry, cools into resentment, sinks into sadness
+and ends with a rueful half-laugh. Nothing in that arc was ever recorded as one performance — it is
+assembled. The dataset is millions of such assemblies, each re-annotated as a single item and each
+carrying a written <em>direction</em> describing how the delivery should move.
+<br><br>
+The hard part is not volume. <b>1.29 × 10<sup>23</sup></b> distinct collages are combinatorially
+available from our synthetic corpus alone; picking a big number and generating it would produce a
+dataset in which every underlying clip is reused hundreds of times. The hard part is
+<b>coverage</b> — sampling across trajectory <em>shapes</em> — and the hard constraint is that the
+speaker-similarity gate we would naturally use to keep seams clean throws away
+<b>the exact material the dataset is about</b>.
+</div>
+
+<div class=toc><ol>
+<li><a href="#idea">What is being built</a></li>
+<li><a href="#sources">Source material, measured</a></li>
+<li><a href="#tiers">Sharing tiers</a></li>
+<li><a href="#synth">Inside the synthetic corpus</a></li>
+<li><a href="#seam">The seam problem — the central decision</a></li>
+<li><a href="#emo">Can we even measure the emotion?</a></li>
+<li><a href="#natural">Natural corpora: who actually qualifies</a></li>
+<li><a href="#comb">Combinatorics, and why it is the wrong number</a></li>
+<li><a href="#cover">Coverage strategy and trajectory archetypes</a></li>
+<li><a href="#rules">Procedural rules — the builder spec</a></li>
+<li><a href="#cap">Captions: procedural vs. LLM direction</a></li>
+<li><a href="#cost">Cost scenarios</a></li>
+<li><a href="#risk">What could go wrong</a></li>
+<li><a href="#rec">Recommendation and first step</a></li>
+</ol></div>
+
+
+<h2 id=idea>1 · What is being built</h2>
+
+<p>Almost all speech training data is <em>flat</em>: one utterance, one emotional state, held for
+the length of the clip. Real acting is not like that. A performance moves — a line begins in anger
+and ends in something quieter; amusement curdles into bitterness over four sentences. A model
+trained only on flat clips has never seen the transition, only the endpoints.</p>
+
+<p>A <b>collage</b> is a synthetic performance built by concatenation:</p>
+
+<div class=arc>
+<div><b>clip 1</b> Anger, full intensity<br><span style="color:var(--mut)">"Are you serious with this?"</span></div>
+<div><b>clip 2</b> Anger, contained<br><span style="color:var(--mut)">irritation tucked under the words</span></div>
+<div><b>clip 3</b> Bitterness<br><span style="color:var(--mut)">"an exhausting climb"</span></div>
+<div><b>clip 4</b> Sadness + amusement<br><span style="color:var(--mut)">a rueful half-laugh</span></div>
+</div>
+
+<p>All four clips are spoken by the same voice. They were generated independently, seconds apart, as
+answers to four different prompts. Trimmed and joined they read as one continuous take with a moving
+emotional line. The finished 40-second item is then re-annotated from scratch — VoiceNet's 57
+acoustic dimensions, Empathic Insight's 40 emotion intensities, a speaker embedding, a caption — and
+that annotation describes the <em>arc</em>, not any one clip.</p>
+
+<p>Five constraints define the whole design, and they are in tension with each other:</p>
+<ol>
+<li><b>Neighbouring clips must sound like the same person.</b> A seam where the voice changes is a
+defect, not a performance.</li>
+<li><b>Emotion must change, but continuously.</b> Two or three distinct emotional states across a
+collage, reached in gradual steps — not a cut from ecstasy to grief.</li>
+<li><b>Vocal bursts are an explicit exception.</b> A scream, a sob or a burst of laughter dominates
+the speaker embedding: the same person screaming does not embed like the same person talking. A seam
+that lands on a burst is <em>allowed</em> to break the similarity rule. This is written as a rule
+with its own threshold, not waved through case by case.</li>
+<li><b>Silence is trimmed</b> at every clip head and tail before joining, so the seams do not gap.</li>
+<li><b>The finished collage is re-annotated</b>, and gets one caption describing the whole arc.</li>
+</ol>
+
+
+<h2 id=sources>2 · Source material, measured</h2>
+
+<p>Seven bodies of material are in scope. Six are already annotated and on disk; one (Kartoffelphon)
+is not yet ingested. Earlier planning quoted these as extrapolations from a 0.5–6 % sample with a
+stated <b>±15–20 %</b> uncertainty. That is no longer necessary: the annotation run wrote a
+per-utterance index parquet for every shard, so the five ingested natural corpora were re-counted
+<b>exactly</b> — every row of all 14,033 index parquets — for this document.</p>
+
+<table>
+<tr><th>Source</th><th class=n>Utterances</th><th class=n>Audio hours</th><th class=n>Mean clip</th><th>Basis</th><th class=n>vs. earlier estimate</th></tr>
+<tr><td>laion/Emolia <span class=tag>Emilia</span></td><td class=n><b>81,824,581</b></td><td class=n><b>209,371</b></td><td class=n>9.21 s</td><td class=w><span class="tag m">exact</span> all 4,163 index parquets</td><td class=n>+23.5 % / +24.1 %</td></tr>
+<tr><td>laion/eurospeech-enhanced-dacvae <span class=tag>EuroParl</span></td><td class=n><b>7,706,046</b></td><td class=n><b>32,044</b></td><td class=n>14.97 s</td><td class=w><span class="tag m">exact</span> all 2,314</td><td class=n>−18.8 % / −18.6 %</td></tr>
+<tr><td>TTS-AGI/commonvoice22-sidon-dacvae</td><td class=n><b>7,062,615</b></td><td class=n><b>10,272</b></td><td class=n>5.24 s</td><td class=w><span class="tag m">exact</span> all 935</td><td class=n>−11.2 % / −2.7 %</td></tr>
+<tr><td>TTS-AGI/mls-enhanced-dacvae <span class=tag>MLS</span></td><td class=n><b>432,177</b></td><td class=n><b>1,801</b></td><td class=n>15.00 s</td><td class=w><span class="tag m">exact</span> all 125</td><td class=n>−1.5 % / −0.7 %</td></tr>
+<tr><td>vp500 synthetic voice profiles</td><td class=n>20,125,736</td><td class=n>~54,000</td><td class=n>9.72 s</td><td class=w>complete census: 500 voices × 842 condition groups. Hours <span class="tag e">estimated</span> from the mean clip length.</td><td class=n>—</td></tr>
+<tr><td>MultiLlasa/Kartoffelphon-2.5M-de-ger <span class=tag>not ingested</span></td><td class=n>~2,594,843</td><td class=n>~7,330</td><td class=n>10.12 s</td><td class=w><span class="tag e">estimated</span> — HF datasets-server row estimate + 2,900 sampled rows for duration</td><td class=n>—</td></tr>
+<tr class=tot><td>releasable subtotal</td><td class=n>119,745,998</td><td class=n>314,817</td><td class=n></td><td></td><td class=n></td></tr>
+<tr><td>TTS-AGI/podcast-tokenized-bg2.5-enj4.5 <span class="tag e">internal only</span></td><td class=n><b>26,606,892</b></td><td class=n><b>96,838</b></td><td class=n>13.10 s</td><td class=w><span class="tag m">exact</span> all 6,496</td><td class=n>+0.05 % / +0.2 %</td></tr>
+<tr class=tot><td>grand total</td><td class=n>146,352,890</td><td class=n>411,655</td><td class=n></td><td></td><td class=n></td></tr>
+</table>
+<p class=sub>Exact counts computed 2026-08-16 by summing <code>dur_s</code> over every index parquet
+in <code>/e/data1/datasets/products/TTS Training Data/laion-tts-annotated-v1/index/</code>
+(≈3.5 minutes on the login node). Earlier estimates from
+<code>$NB/tokcorpus/meas/inv_*.json</code> and <code>inv_stability.json</code>. Kartoffelphon from
+the HF API, verified 2026-08-16.</p>
+
+<div class=note>
+<b class=h>How the old ±20 % estimates held up</b>
+Podcast was right to within 0.2 %, MLS to within 1.5 %, Common Voice to within 11 %. EuroParl was
+19 % too high and Emilia <b>23.5 % too low</b> — the survey's own 3-shard scan (77.4 M / 208 k h) was
+in fact closer than its 14-shard "improvement" (66.2 M / 169 k h), which is a useful caution about
+treating a larger sample as automatically better when the shards differ in size by 100×. Every
+error stayed inside the stated band, which is the point of stating a band.
+</div>
+
+<div class=note>
+<b class=h>The annotation run these numbers rest on is finished</b>
+The corpus survey (2026-08-13) planned a 4,680 GPU-h annotation pass; the production run
+(<code>/e/data1/datasets/products/TTS&nbsp;Training&nbsp;Data/laion-tts-annotated-v1</code>) has since
+completed <b>all 15,871 shards across all seven datasets, 18 TB on disk</b>, with a per-utterance
+index parquet carrying 180 columns: 40 Empathic-Insight emotion intensities, VoiceNet regressions and
+buckets, genuineness, vocal-burst blend, four quality heads, transcript, alignment status, burst spans
+and MOSS tokens. Every collage source clip therefore already has the annotation the collage builder
+needs to <em>choose</em> clips. Only the finished collage needs new GPU work.
+</div>
+
+<h3>Kartoffel — what it actually is</h3>
+<p>There is <b>no Kartoffel dataset under <code>SebastianBodza/</code></b>. "Kartoffel" is that
+author's German <em>TTS model</em> family. The German corpus behind it is published under the
+MultiLlasa org (of which he is a member) as
+<a href="https://huggingface.co/datasets/MultiLlasa/Kartoffelphon-2.5M-de-ger"><code>MultiLlasa/Kartoffelphon-2.5M-de-ger</code></a>
+— the only Kartoffel dataset that exists, no size variants. Verified against
+<code>huggingface.co/api/datasets?author=SebastianBodza</code>,
+<code>?author=MultiLlasa</code> and <code>?filter=kartoffel</code>.</p>
+
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Size</td><td>107.22 GB, 207 train + 11 test Arrow shards, 16 kHz mono, mp3-in-Arrow (~32 kbps)</td></tr>
+<tr><td>Scale</td><td>~2.59 M rows, ~7,330 h. Mean segment 10.12 s, median 9.08 s, hard-bounded 3–30 s <span class="tag m">measured on 2,900 sampled rows</span></td></tr>
+<tr><td>License</td><td><b>CC-BY-4.0</b> — redistributable with attribution. Publisher's assertion; no per-row provenance to audit. ~51 % of sampled rows are LibriVox (public domain, safe); the podcast half is asserted CC-compatible.</td></tr>
+<tr><td>Speaker ids</td><td><b>Effectively none.</b> The <code>speaker</code> column holds per-episode pyannote labels (<code>SPEAKER_00</code>…). Not globally unique. A usable identity key is <code>(podcast_name, episode_name, speaker)</code>; the true speaker count is not recoverable from metadata.</td></tr>
+<tr><td>Emotion</td><td><b>None.</b> No emotion, valence, arousal or expressivity column, and zero bracketed paralinguistic tags in sampled transcripts.</td></tr>
+<tr><td>Other</td><td><code>text</code> (Whisper, not human), <code>dnsmos</code> (hard-filtered ≥ 3.0), <code>start</code>/<code>end</code>, <code>language</code> (de primary, ~4.4 % en retained)</td></tr>
+</table>
+
+<div class=note class=w>
+<b class=h>What adding Kartoffel would buy for German — honestly, not much for <em>this</em> dataset</b>
+It would add ~7,330 h of clean, CC-BY, redistributable German with transcripts. That is real value
+for a German TTS corpus. But for a <b>collage</b> dataset it contributes almost nothing on its own:
+collages need (a) stable speaker identity and (b) emotional variation within a speaker, and
+Kartoffelphon has neither. Episode-scoped diarization labels can be promoted to global identities by
+clustering the VoiceCLAP embeddings our pipeline would produce anyway, and emotion would come from
+running our own Empathic-Insight head over it — that is roughly <b>68 GPU-h</b> of annotation at the
+measured production rate (7,330 h ÷ 0.01140 GPU-h per audio-hour × 1.06 for the missing decode).
+Cheap. But it is an <em>ingest project</em>, not a source of arcs, and it should not gate the collage
+build. Recommend: ingest it into the annotated corpus for the German TTS tier, exclude it from
+collage v1.
+</div>
+
+
+<h2 id=tiers>3 · Sharing tiers</h2>
+
+<p>This has to be stated plainly and enforced structurally, not by memory at release time.</p>
+
+<table>
+<tr><th>Tier</th><th>Sources</th><th class=n>Utterances</th><th class=n>Hours</th></tr>
+<tr><td><b>Releasable</b></td><td class=w>Emilia (laion/Emolia), MLS, Common Voice, EuroParl/eurospeech, our synthetic voice profiles, (+ Kartoffelphon if ingested, CC-BY-4.0)</td><td class=n>119.7 M</td><td class=n>314,817</td></tr>
+<tr><td><b>Internal only</b></td><td class=w>TTS-AGI/podcast-tokenized-bg2.5-enj4.5 — <b>cannot be shared</b></td><td class=n>26.6 M</td><td class=n>96,838</td></tr>
+</table>
+<p class=sub>Speaker-qualified totals — the numbers that actually bound a collage build — are in
+section 7.4: ~645,000 releasable qualifying speakers versus 128,762 internal-only channel keys.</p>
+
+<p>The podcast corpus is 18 % of the utterances and 24 % of the hours, and it is by a wide margin the
+most expressive natural material we have — mean genuineness 3.97/6 against 1.05 for MLS and 0.95 for
+Common Voice (section 7.6). It is exactly the corpus one would most want in an emotion dataset, and
+it is the one that cannot be shared. It is therefore very tempting to fold into a headline number.
+Do not. Concretely:</p>
+<ul>
+<li>Collages are built <b>within one speaker</b>, so a collage is never mixed-provenance — every
+collage inherits exactly one tier. This is the one piece of luck in the whole design.</li>
+<li>Write the tier into the shard path (<code>collage/rel/…</code> vs <code>collage/int/…</code>) and
+into every row of the index parquet, so a releasable export is a directory selection, not a filter
+someone has to remember to apply.</li>
+<li>Report totals separately, always. Never publish a single "N collages" figure that silently
+includes the internal tier.</li>
+</ul>
+
+
+<h2 id=synth>4 · Inside the synthetic corpus — the main source</h2>
+
+<p>Our own voice profiles are the best collage material we have, and it is worth being precise about
+why. <span class="tag m">measured</span> on a random 40-voice sample (1,609,947 rows read from 480
+parquet files under <code>$NB/vprof/vp500/&lt;voice&gt;/PPILOT2/</code>; the sample recovers
+40,249 candidates per voice against the census figure of 40,251, so it is representative).</p>
+
+<table>
+<tr><th>Quantity</th><th class=n>Value</th><th>Note</th></tr>
+<tr><td>Voices</td><td class=n>500</td><td class=w>each a distinct reference identity</td></tr>
+<tr><td>Condition groups per voice</td><td class=n>842</td><td class=w>every emotion at four settings, every VoiceNet dimension at four levels, edge cases, characters, bursts — in English <em>and</em> German</td></tr>
+<tr><td>Candidates per group</td><td class=n>47.8</td><td class=w>48 in 98.8 % of groups (a 32-take subset A + a 16-take subset B); 32 in the rest</td></tr>
+<tr><td>Total candidates</td><td class=n>20,125,736</td><td class=w>~54,000 audio-hours</td></tr>
+<tr><td>Distinct emotions</td><td class=n>40</td><td class=w>exactly 15,360 candidates per emotion per 40 voices — perfectly balanced by construction</td></tr>
+<tr><td>Language split</td><td class=n>50 / 50</td><td class=w>804,976 DE / 804,971 EN in the sample. <b>Half of this corpus is German.</b></td></tr>
+<tr><td>Mean clip duration</td><td class=n>9.90 s</td><td class=w>median 9.12 s; p05 4.48 s, p95 17.20 s</td></tr>
+<tr><td>Empty / failed takes</td><td class=n>0.21 %</td><td class=w>3,408 of 1,609,947</td></tr>
+</table>
+
+<p>The block structure matters for collage design, because the blocks differ enormously in how they
+behave at a seam:</p>
+
+<table>
+<tr><th>Block</th><th class=n>Candidates</th><th class=n>Mean spk_sim</th><th class=n>% below 0.40</th><th class=n>Mean genuineness</th><th class=n>Mean burst blend</th></tr>
+<tr><td>voicenet (57 dims × 4 levels)</td><td class=n>875,516</td><td class=n>0.439</td><td class=n>40.2 %</td><td class=n>0.74</td><td class=n>1.46</td></tr>
+<tr><td>emotion (40 × 4 settings)</td><td class=n>614,399</td><td class=n>0.404</td><td class=n>49.2 %</td><td class=n>0.75</td><td class=n>2.16</td></tr>
+<tr><td>edge (screams, sobs, laughter)</td><td class=n>53,760</td><td class=n>0.403</td><td class=n>48.6 %</td><td class=n>1.19</td><td class=n>2.40</td></tr>
+<tr><td>character</td><td class=n>46,080</td><td class=n>0.398</td><td class=n>50.0 %</td><td class=n>0.48</td><td class=n>1.52</td></tr>
+<tr><td>burst_isolated</td><td class=n>12,800</td><td class=n>0.464</td><td class=n>34.4 %</td><td class=n>1.23</td><td class=n>1.75</td></tr>
+<tr><td>sports</td><td class=n>3,840</td><td class=n>0.273</td><td class=n>80.2 %</td><td class=n>1.37</td><td class=n>2.49</td></tr>
+<tr><td>explicit</td><td class=n>3,552</td><td class=n>0.406</td><td class=n>49.0 %</td><td class=n>0.79</td><td class=n>1.81</td></tr>
+<tr class=tot><td>all</td><td class=n>1,609,947</td><td class=n>0.423</td><td class=n>44.3 %</td><td class=n>0.76</td><td class=n>1.77</td></tr>
+</table>
+<p class=sub><code>spk_sim</code> is the ECAPA cosine between the take and the voice's reference
+recording. The 44.3 % below-floor figure independently reproduces the corpus-wide 43.4 % quoted from
+earlier work, on a different random sample — a good consistency check.</p>
+
+
+<h2 id=seam>5 · The seam problem — this is the central design decision</h2>
+
+<p>The natural rule is "require high speaker similarity at every seam". Applied to this corpus it is
+close to self-defeating, and the reason is measurable.</p>
+
+<h3>5.1 The gate removes exactly the material the dataset is about</h3>
+
+<p>Below is <code>spk_sim</code> broken out by <em>intended emotion</em>, sorted by how much of the
+material a 0.40 floor would discard. <span class="tag m">measured</span>, 614,399 emotion-block takes.</p>
+
+<table>
+<tr><th>Emotion</th><th class=n>Mean spk_sim</th><th class=n>% below 0.40</th><th>Emotion</th><th class=n>Mean spk_sim</th><th class=n>% below 0.40</th></tr>
+<tr><td><b>Anger</b></td><td class=n>0.306</td><td class=n><b>66.1 %</b></td><td>Sadness</td><td class=n>0.417</td><td class=n>47.8 %</td></tr>
+<tr><td><b>Impatience &amp; Irritability</b></td><td class=n>0.316</td><td class=n><b>62.8 %</b></td><td>Contemplation</td><td class=n>0.414</td><td class=n>46.9 %</td></tr>
+<tr><td>Confusion</td><td class=n>0.339</td><td class=n>61.6 %</td><td>Bitterness</td><td class=n>0.432</td><td class=n>44.6 %</td></tr>
+<tr><td>Intoxication</td><td class=n>0.330</td><td class=n>61.1 %</td><td>Disappointment</td><td class=n>0.434</td><td class=n>43.5 %</td></tr>
+<tr><td>Triumph</td><td class=n>0.347</td><td class=n>59.7 %</td><td>Pride</td><td class=n>0.443</td><td class=n>41.9 %</td></tr>
+<tr><td>Amusement</td><td class=n>0.357</td><td class=n>58.4 %</td><td>Interest</td><td class=n>0.441</td><td class=n>41.3 %</td></tr>
+<tr><td>Helplessness</td><td class=n>0.354</td><td class=n>57.4 %</td><td>Affection</td><td class=n>0.453</td><td class=n>38.6 %</td></tr>
+<tr><td>Concentration</td><td class=n>0.373</td><td class=n>55.3 %</td><td>Thankfulness</td><td class=n>0.456</td><td class=n>37.9 %</td></tr>
+<tr><td>Hope / Enthusiasm</td><td class=n>0.385</td><td class=n>54.9 %</td><td>Awe</td><td class=n>0.461</td><td class=n>36.7 %</td></tr>
+<tr><td>Malevolence</td><td class=n>0.379</td><td class=n>54.7 %</td><td><b>Pleasure / Ecstasy</b></td><td class=n>0.466</td><td class=n><b>35.2 %</b></td></tr>
+</table>
+
+<p>The ordering is not random. The emotions at the top — anger, irritability, triumph, amusement —
+are the loud, high-arousal, physically distorted ones. Those are precisely the ones that make an
+emotional arc interesting, and the gate hits them 1.9× harder than it hits the calm end of the
+scale. Restricting to the highest-intensity settings makes it worse: intensity condition <b>A</b>
+sits at 57.3 % below the floor versus 42.7 % for condition <b>D</b> <span class="tag m">measured</span>.
+<b>A naive same-speaker gate is a de-facto emotion filter that selects for blandness.</b></p>
+
+<h3>5.2 The floor is probably miscalibrated — and the embedder is weaker than assumed</h3>
+
+<p>Two independent lines of evidence say the 0.40 floor is not where it should be.</p>
+
+<p><b>(a)</b> An independent WavLM speaker embedder puts <b>75.4 %</b> of the takes that fail the
+ECAPA floor <em>above</em> its own same-speaker threshold. Two embedders disagreeing on three
+quarters of the rejections is not a marginal calibration issue.</p>
+
+<p><b>(b)</b> I measured what the floor is actually being asked to do. Taking the quality-selected
+pool (top-5 per group by genuineness + burst blend) from 8 random voices, and computing the
+<em>clip-to-clip</em> ECAPA cosine — which is what a seam actually is, not the clip-to-reference
+cosine <code>spk_sim</code> measures:</p>
+
+<table>
+<tr><th>Pairing</th><th class=n>n</th><th class=n>p05</th><th class=n>median</th><th class=n>p95</th></tr>
+<tr><td>Same voice, two different takes</td><td class=n>239,945</td><td class=n>0.003</td><td class=n>0.372</td><td class=n>0.692</td></tr>
+<tr><td>Different voices (negative control)</td><td class=n>105,011</td><td class=n>−0.037</td><td class=n>0.095</td><td class=n>0.351</td></tr>
+</table>
+
+<table>
+<tr><th class=n>Threshold</th><th class=n>Same-voice pairs accepted</th><th class=n>Different-voice pairs accepted</th><th class=n>Ratio</th></tr>
+<tr><td class=n>0.30</td><td class=n>56.9 %</td><td class=n>9.9 %</td><td class=n>5.7×</td></tr>
+<tr><td class=n>0.35</td><td class=n>48.0 %</td><td class=n>7.0 %</td><td class=n>6.9×</td></tr>
+<tr><td class=n><b>0.40</b></td><td class=n><b>38.7 %</b></td><td class=n><b>4.8 %</b></td><td class=n>8.0×</td></tr>
+<tr><td class=n>0.50</td><td class=n>22.6 %</td><td class=n>2.2 %</td><td class=n>10.2×</td></tr>
+<tr><td class=n>0.60</td><td class=n>11.8 %</td><td class=n>0.7 %</td><td class=n>17.7×</td></tr>
+</table>
+
+<div class=note class=b>
+<b class=h>The equal-error rate of this embedder on this material is 24.3 % at a threshold of 0.18</b>
+That is very poor discrimination. A gate at 0.40 rejects 61 % of genuinely same-voice pairs to
+avoid 4.8 % of genuinely different-voice pairs — and since collages are built <em>within one
+voice by construction</em>, the different-voice error rate is not a risk we are actually exposed to.
+The gate is buying protection against a failure mode that cannot occur, at the price of most of the
+data.<br><br>
+Two caveats, stated so nobody over-reads this. First, all 500 "voices" are synthesised by the same
+model from reference conditioning, so they are more similar to each other than 500 real humans would
+be — the false-accept column is pessimistic and the EER is not a claim about ECAPA in general.
+Second, emotion itself perturbs the embedding, which is the whole point: the "same-voice" spread is
+wide <em>because</em> the takes differ in emotion, exactly as the burst exception predicts at a
+smaller scale.
+</div>
+
+<h3>5.3 The decision</h3>
+
+<p><b>Do not gate on <code>spk_sim</code> to the reference at all. Gate on clip-to-clip similarity
+at the seam, at a threshold set from the measured same-voice distribution, with an explicit burst
+exemption.</b> Concretely, and with the reasoning for each number:</p>
+
+<ul>
+<li><b>Seam threshold 0.30 on clip-to-clip ECAPA cosine</b>, not 0.40 and not to the reference.
+0.30 is the 25th percentile of the same-voice distribution (p25 = 0.230, median 0.372) and still
+sits above the p95 of the different-voice control (0.351) by enough to be meaningful at 5.7×
+enrichment. It accepts 56.9 % of same-voice pairs instead of 38.7 %.</li>
+<li><b>Confirm with a second embedder.</b> Accept a seam if <em>either</em> ECAPA ≥ 0.30 <em>or</em>
+WavLM is above its own same-speaker threshold. Given that WavLM rescues 75.4 % of ECAPA's rejections,
+this is the single change that recovers the most emotional material for the least risk.</li>
+<li><b>Never compare across voices.</b> The voice identity is known from the source metadata; the
+embedding check is a <em>defect detector</em> (did this take come out sounding like a different
+person because the emotion broke the synthesis?), not an identity check. Framing it that way is what
+justifies the lower threshold.</li>
+</ul>
+
+<h3>5.4 The burst exception, written as a rule</h3>
+
+<p>Screams, sobs and laughter legitimately break the embedding. Measured on the same 8 voices, taking
+one side of the pair from the edge-case or isolated-burst block and the other from ordinary emotional
+speech <span class="tag m">measured</span>:</p>
+
+<table>
+<tr><th>Seam type</th><th class=n>Mean cosine</th><th class=n>Median</th><th class=n>% below 0.40</th><th class=n>% below 0.55</th></tr>
+<tr><td>edge case (scream / sob / laugh) ↔ speech</td><td class=n>0.348</td><td class=n>0.346</td><td class=n>62.9 %</td><td class=n>86.7 %</td></tr>
+<tr><td>isolated burst ↔ speech</td><td class=n>0.386</td><td class=n>0.380</td><td class=n>55.1 %</td><td class=n>81.9 %</td></tr>
+<tr><td>speech ↔ speech, same voice</td><td class=n>0.428</td><td class=n>0.446</td><td class=n>45.4 %</td><td class=n>—</td></tr>
+</table>
+
+<p>Within one class the drop is real but modest — about 0.08 in the median. The extreme cases are in
+the tail: <code>ga_amuse_laugh</code> sits at a mean <code>spk_sim</code> of 0.257 with <b>76.6 %</b>
+below the floor, and the sports block (shouting) at 0.273 / 80.2 %. So the exception should be
+<em>class-specific</em>, not a blanket pass:</p>
+
+<pre>BURST_EXEMPT_CLASSES = {          # from the edge/burst_isolated blocks
+    "fear_scream", "pain_scream", "pain_groan", "amused_laughter",
+    "ga_amuse_laugh", "sad_crying", "tears", "whimpering",
+    "cold_shiver", "ga_*"                      # ga_ = "goes all the way" variants
+}
+
+def seam_ok(a, b):
+    cos = ecapa_cos(a, b)
+    if cos >= 0.30:            return True          # normal seam
+    if wavlm_same_speaker(a,b): return True         # second-opinion rescue
+    # burst exemption: at most ONE side may be a burst, and the burst must be
+    # confidently classified, not a low-energy false positive
+    burst_side = (a.burst_class in BURST_EXEMPT_CLASSES) ^ (b.burst_class in BURST_EXEMPT_CLASSES)
+    if burst_side and max(a.blend, b.blend) &gt;= 4.0 and cos &gt;= 0.10:
+        return True                                  # exempt seam, FLAGGED in metadata
+    return False</pre>
+
+<p>Three things about this rule are deliberate:</p>
+<ul>
+<li><b>Exclusive-or, not or.</b> Two bursts either side of a seam gives no anchor at all — the seam
+becomes unverifiable. At most one side may be exempt.</li>
+<li><b>A blend floor of 4.0/10</b> on the burst side. The burst locator has a known false-positive
+problem: in the smoke test, 77 of 151 detected spans came back as "Low Mumble" and 39 as "Ahem",
+which looks like the locator firing on low-energy speech rather than on bursts. Requiring a strong
+vocal-burst blend score means the exemption is only granted to something that actually sounds like a
+burst. In the quality-selected pool the mean blend is 4.15 at top-5, so this floor is roughly the
+median of the selected material, not an exotic requirement.</li>
+<li><b>A residual floor of 0.10</b> even for exempt seams, which is still above the different-voice
+median of 0.095. An exempt seam is allowed to be bad; it is not allowed to be indistinguishable from
+a different person.</li>
+<li><b>Every exempt seam is recorded</b> in the collage metadata as
+<code>seam[i].exempt = true</code> with the class and the cosine. Downstream consumers can filter
+them out; a human evaluator can listen to exactly those. Never let an exemption be invisible.</li>
+</ul>
+
+
+<h2 id=emo>6 · Can we even measure the emotion? — a result that changes the design</h2>
+
+<p>The whole dataset rests on being able to say that clip 2 is emotionally between clip 1 and clip 3.
+So I checked whether the per-clip emotion read-out actually supports that. It largely does not, and
+this is important enough to change how the arcs get built.</p>
+
+<p>Method: parse the 40-dimensional Empathic-Insight vector for every clip in the quality pool of 8
+voices (33,670 clips), compute the centroid of each of the 40 intended emotions, and ask how often a
+clip's own emotion is the nearest centroid.</p>
+
+<table>
+<tr><th>Test</th><th class=n>Accuracy</th><th class=n>Chance</th></tr>
+<tr><td>Single clip, 40-way nearest-centroid recovery of its intended emotion</td><td class=n>18.0 %</td><td class=n>2.5 %</td></tr>
+<tr><td>Single clip, top-5</td><td class=n>47.1 %</td><td class=n>12.5 %</td></tr>
+<tr><td>Mean of 5 clips of the same emotion</td><td class=n>52.7 %</td><td class=n>2.5 %</td></tr>
+<tr><td>Mean of 20 clips</td><td class=n>90.8 %</td><td class=n>2.5 %</td></tr>
+<tr><td>Mean of 50 clips</td><td class=n>99.3 %</td><td class=n>2.5 %</td></tr>
+</table>
+
+<p>Two more numbers make the same point from different directions. The <code>emo_argmax</code> field
+agrees with the intended emotion on only <b>11.3 %</b> of all takes (14.6 % of top-1 takes), and
+"Interest" is the argmax for 65 % of the whole corpus. And the L2 distance between two clips that
+were <em>asked for the same emotion</em> has a median of 4.67, versus 4.87 for two clips picked at
+random — barely distinguishable.</p>
+
+<div class=note class=b>
+<b class=h>The signal is real but it lives in the average, not in the clip</b>
+Averaged over ~20 takes the emotion labels are recovered at 90.8 %, and the resulting centroid
+geometry is semantically excellent — the nearest neighbour of Anger is Impatience (0.93), of
+Bitterness is Sourness (0.71), of Distress is Helplessness (0.54), of Amusement is Teasing (0.54).
+That is not noise; that is a correct map of emotional space. But a <em>single clip's</em> 40-dim
+vector is too noisy to place that clip on the map.<br><br>
+<b>Consequence for the design:</b> build arcs on the <b>intended condition label</b> (which is
+exact — it is the prompt we asked for) positioned at its <b>measured centroid</b>, and use the
+per-clip vector only as a soft tie-breaker and as a post-hoc audit statistic. Do not compute
+"emotion delta per step" from raw per-clip vectors; the noise is larger than the signal you are
+trying to control.
+</div>
+
+<h3>6.1 The emotional plane, measured</h3>
+
+<p>A PCA of the 40 emotion centroids gives two interpretable axes that together carry 41.0 % of the
+variance (PC1 23.8 %, PC2 17.2 %):</p>
+<ul>
+<li><b>PC1 — valence.</b> Negative loadings: Distress (−0.43), Sadness (−0.38), Helplessness (−0.34),
+Disappointment (−0.32). Positive: Interest (+0.25), Hope (+0.24), Elation (+0.19).</li>
+<li><b>PC2 — hostility.</b> Positive: Impatience (+0.40), Anger (+0.30), Contempt (+0.25),
+Sourness (+0.22). Negative: Thankfulness (−0.28), Hope (−0.26), Relief (−0.26), Affection (−0.22).</li>
+</ul>
+
+<svg class=plane viewBox="0 0 880 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Forty emotions positioned on a valence versus hostility plane derived from measured Empathic Insight centroids, with an example four-step arc from anger through impatience and bitterness to disappointment">
+<style>
+.pgrid{stroke:var(--line);stroke-width:1}
+.pax{font:11px -apple-system,system-ui,sans-serif;fill:var(--mut)}
+.plb{font:10.5px -apple-system,system-ui,sans-serif;fill:var(--fg)}
+.pdt{fill:none;stroke:var(--acc);stroke-width:2}
+.parc{stroke:var(--bad);stroke-width:2.5;fill:none;stroke-linecap:round}
+.pah{fill:var(--bad)}
+.parcdt{fill:var(--bad);stroke:var(--card);stroke-width:2}
+</style>
+<line class=pgrid x1="461.1" y1="42" x2="461.1" y2="512" stroke-dasharray="3 5"/>
+<line class=pgrid x1="64" y1="277.6" x2="816" y2="277.6" stroke-dasharray="3 5"/>
+<text class=pax x="818" y="269.6" text-anchor="end">PC1 · valence →</text>
+<text class=pax x="62" y="269.6" text-anchor="start">← negative</text>
+<text class=pax x="469.1" y="36" text-anchor="start">↑ PC2 · hostility</text>
+<text class=pax x="469.1" y="528" text-anchor="start">↓ warmth</text>
+<path class=parc d="M 469.1,42.0 L 474.0,127.4 L 302.8,191.2 L 273.7,264.8" opacity=".55"/>
+<circle class=parcdt cx="469.1" cy="42.0" r="5.5"/>
+<circle class=parcdt cx="474.0" cy="127.4" r="5.5"/>
+<circle class=parcdt cx="302.8" cy="191.2" r="5.5"/>
+<circle class=parcdt cx="273.7" cy="264.8" r="5.5"/>
+<circle class=pdt cx="594.2" cy="407.8" r="4"/>
+<circle class=pdt cx="669.2" cy="208.3" r="4"/>
+<circle class=pdt cx="635.6" cy="234.6" r="4"/>
+<circle class=pdt cx="638.2" cy="313.1" r="4"/>
+<circle class=pdt cx="651.9" cy="281.9" r="4"/>
+<circle class=pdt cx="373.1" cy="219.5" r="4"/>
+<circle class=pdt cx="572.6" cy="319.5" r="4"/>
+<circle class=pdt cx="514.4" cy="114.3" r="4"/>
+<circle class=pdt cx="657.0" cy="360.7" r="4"/>
+<circle class=pdt cx="441.2" cy="95.3" r="4"/>
+<circle class=pdt cx="139.5" cy="286.7" r="4"/>
+<circle class=pdt cx="434.0" cy="263.9" r="4"/>
+<circle class=pdt cx="760.6" cy="381.9" r="4"/>
+<circle class=pdt cx="246.2" cy="302.6" r="4"/>
+<circle class=pdt cx="157.8" cy="309.4" r="4"/>
+<circle class=pdt cx="193.2" cy="297.0" r="4"/>
+<circle class=pdt cx="240.7" cy="259.9" r="4"/>
+<circle class=pdt cx="88.9" cy="312.4" r="4"/>
+<circle class=pdt cx="816.0" cy="350.4" r="4"/>
+<circle class=pdt cx="541.8" cy="353.1" r="4"/>
+<circle class=pdt cx="658.6" cy="285.1" r="4"/>
+<circle class=pdt cx="399.6" cy="253.3" r="4"/>
+<circle class=pdt cx="331.1" cy="231.5" r="4"/>
+<circle class=pdt cx="343.3" cy="361.8" r="4"/>
+<circle class=pdt cx="490.6" cy="139.3" r="4"/>
+<circle class=pdt cx="78.8" cy="296.5" r="4"/>
+<circle class=pdt cx="739.1" cy="403.9" r="4"/>
+<circle class=pdt cx="727.9" cy="338.6" r="4"/>
+<circle class=pdt cx="576.6" cy="390.0" r="4"/>
+<circle class=pdt cx="214.7" cy="313.9" r="4"/>
+<circle class=pdt cx="437.0" cy="348.9" r="4"/>
+<circle class=pdt cx="64.0" cy="305.9" r="4"/>
+<circle class=pdt cx="398.6" cy="197.1" r="4"/>
+<circle class=pdt cx="678.9" cy="200.1" r="4"/>
+<circle class=pdt cx="707.1" cy="512.0" r="4"/>
+<circle class=pdt cx="713.8" cy="229.0" r="4"/>
+<text class=plb x="601.2" y="411.3" text-anchor="start">Affection</text>
+<text class=plb x="662.2" y="211.8" text-anchor="end">Amusement</text>
+<text class=plb x="476.1" y="45.5" text-anchor="start" fill="var(--bad)" font-weight="600">Anger</text>
+<text class=plb x="628.6" y="238.1" text-anchor="end">Astonishment</text>
+<text class=plb x="645.2" y="316.6" text-anchor="start">Awe</text>
+<text class=plb x="309.8" y="194.7" text-anchor="start" fill="var(--bad)" font-weight="600">Bitterness</text>
+<text class=plb x="644.9" y="285.4" text-anchor="end">Concentration</text>
+<text class=plb x="380.1" y="213.5" text-anchor="start">Confusion</text>
+<text class=plb x="565.6" y="323.0" text-anchor="end">Contemplation</text>
+<text class=plb x="521.4" y="117.8" text-anchor="start">Contempt</text>
+<text class=plb x="664.0" y="364.2" text-anchor="start">Contentment</text>
+<text class=plb x="280.7" y="268.3" text-anchor="start" fill="var(--bad)" font-weight="600">Disappointment</text>
+<text class=plb x="448.2" y="98.8" text-anchor="start">Disgust</text>
+<text class=plb x="146.5" y="280.7" text-anchor="start">Distress</text>
+<text class=plb x="441.0" y="267.4" text-anchor="start">Doubt</text>
+<text class=plb x="767.6" y="385.4" text-anchor="start">Elation</text>
+<text class=plb x="253.2" y="296.6" text-anchor="start">Embarrassment</text>
+<text class=plb x="157.8" y="324.4" text-anchor="middle">Numbness</text>
+<text class=plb x="200.2" y="291.0" text-anchor="start">Fatigue</text>
+<text class=plb x="233.7" y="263.4" text-anchor="end">Fear</text>
+<text class=plb x="88.9" y="327.4" text-anchor="middle">Helplessness</text>
+<text class=plb x="823.0" y="353.9" text-anchor="start">Hope</text>
+<text class=plb x="467.0" y="130.9" text-anchor="end" fill="var(--bad)" font-weight="600">Impatience</text>
+<text class=plb x="548.8" y="356.6" text-anchor="start">Infatuation</text>
+<text class=plb x="665.6" y="288.6" text-anchor="start">Interest</text>
+<text class=plb x="406.6" y="247.3" text-anchor="start">Intoxication</text>
+<text class=plb x="338.1" y="235.0" text-anchor="start">Jealousy</text>
+<text class=plb x="350.3" y="365.3" text-anchor="start">Longing</text>
+<text class=plb x="497.6" y="142.8" text-anchor="start">Malevolence</text>
+<text class=plb x="85.8" y="300.0" text-anchor="start">Pain</text>
+<text class=plb x="746.1" y="407.4" text-anchor="start">Pleasure</text>
+<text class=plb x="734.9" y="342.1" text-anchor="start">Pride</text>
+<text class=plb x="583.6" y="393.5" text-anchor="start">Relief</text>
+<text class=plb x="221.7" y="317.4" text-anchor="start">Sadness</text>
+<text class=plb x="444.0" y="352.4" text-anchor="start">Lust</text>
+<text class=plb x="57.0" y="309.4" text-anchor="end">Shame</text>
+<text class=plb x="405.6" y="191.1" text-anchor="start">Sourness</text>
+<text class=plb x="685.9" y="203.6" text-anchor="start">Teasing</text>
+<text class=plb x="714.1" y="515.5" text-anchor="start">Thankfulness</text>
+<text class=plb x="720.8" y="232.5" text-anchor="start">Triumph</text>
+</svg>
+<figcaption>The 40 emotions positioned by the first two principal components of their measured
+Empathic-Insight centroids (8 voices, 33,670 quality-selected clips). Red: the archetype-1 arc
+Anger → Impatience → Bitterness → Disappointment, whose steps are 1.20, 0.93 and 0.61 in the full
+40-dimensional space. Coordinates in <code>scratchpad/mine/plane.json</code>.</figcaption>
+
+<p>The plane is for reading and for checking <em>direction</em> of travel. Distances should be
+computed in the <b>full 40-dimensional centroid space</b>, because the two components carry only
+41 % of the variance and some perceptually large moves collapse in the projection — Distress →
+Emotional Numbness is <b>1.37</b> in 40-D but only <b>0.20</b> in the plane, because the plane has no
+arousal axis and both sit in the negative-valence corner.
+Everything below is 40-D <span class="tag m">measured</span>: minimum centroid separation 0.536,
+p10 1.219, median <b>2.027</b>, p90 2.960, maximum 4.280 (Anger ↔ Thankfulness).</p>
+
+<p>The branching factor of the arc graph — how many other emotions lie within a given step radius:</p>
+
+<table>
+<tr><th class=n>Step radius (40-D)</th><th class=n>Mean neighbours</th><th class=n>Max</th><th class=n>Emotions with no neighbour</th></tr>
+<tr><td class=n>0.9</td><td class=n>1.1</td><td class=n>3</td><td class=n>12</td></tr>
+<tr><td class=n>1.1</td><td class=n>2.9</td><td class=n>8</td><td class=n>4</td></tr>
+<tr><td class=n><b>1.3</b></td><td class=n><b>5.5</b></td><td class=n>12</td><td class=n>2 — Triumph, Thankfulness</td></tr>
+<tr><td class=n>1.5</td><td class=n>7.7</td><td class=n>15</td><td class=n>1 — Thankfulness</td></tr>
+<tr><td class=n>2.0</td><td class=n>19.1</td><td class=n>31</td><td class=n>0</td></tr>
+</table>
+
+<p><b>Step radius 1.3 is the operating point.</b> It is 64 % of the median inter-emotion distance, so
+a single step is genuinely a small move rather than a jump; it gives 5.5 mean neighbours, enough
+branching for varied paths; and it leaves only two emotions stranded. Those two are a real finding
+worth stating: <b>Triumph</b> (nearest neighbour Interest at 1.38) and <b>Thankfulness</b> (nearest
+neighbour Affection at 1.93) sit off on their own in emotion space and cannot be reached by small
+steps. They get a relaxed entry/exit radius of 2.0, and every collage that uses the relaxation is
+flagged — those seams are the ones most likely to sound like a jump.</p>
+
+<p>Across all 1,560 emotion pairs, the shortest 3-to-6-step path at radius 1.3 has an end-to-end
+span with p10 = 1.56, p25 = 1.75, median = 2.12, p90 = 2.88. That distribution is what sets the
+minimum-span rule in section 10.5.</p>
+
+
+<h2 id=natural>7 · Natural corpora: how many speakers actually qualify</h2>
+
+<p>The raw utterance counts in section 2 are not what the natural corpora contribute. A collage needs
+<em>one speaker</em> with <em>enough clips</em> and <em>enough emotional range</em>. A speaker with
+200 flat clips yields no arc. So the number that matters is how many speakers pass all three tests.</p>
+
+<div class=note class=g>
+<b class=h>This section is exact, not sampled</b>
+Because the completed annotation run wrote a per-utterance index parquet for every shard, the whole
+question could be answered by reading <b>all 13,098 index parquets</b> — every clip of emolia,
+podcast, eurospeech and mls — on the login node in about 90 seconds per dataset with column-pruned
+reads. So the speaker counts, clip distributions and emotion statistics below are <b>measured over
+the complete corpus</b>, not extrapolated. Only Common Voice is estimated: its speaker id does not
+appear in the index parquet at all and had to be recovered from inside the data tars, so it was
+measured on 8 German tars (58,629 clips) and scaled ×10.37 to the 83 German shards.
+</div>
+
+<h3>7.1 First: does the speaker key mean anything?</h3>
+
+<p>None of these corpora carries a speaker column in the index. Identity has to be derived from the
+<code>uid</code>, and a derived key is worthless if it does not group one voice. The test: pool the
+<em>within</em>-key variance of a VoiceNet dimension that should be constant for a person and divide
+by the total variance. Near 0 means the key isolates a voice; near 1 means it groups a mixture. A
+shuffled-label control gives the "no information" reference.</p>
+
+<table>
+<tr><th>Corpus</th><th>Key derived from uid</th><th class=n>vn_GEND within/total</th><th class=n>shuffled control</th><th class=n>keys spanning &gt;1 shard</th><th>Verdict</th></tr>
+<tr><td>emolia — audiobook half</td><td><code>LANG_Bxxxxx_Sxxxxx</code></td><td class=n><b>0.052</b></td><td class=n>0.969</td><td class=n rowspan=2>0.23 %</td><td class=w><b>Real speaker.</b> 95 % of gender variance is between keys.</td></tr>
+<tr><td>emolia — YODAS half</td><td><code>LANG_&lt;youtube_id&gt;</code></td><td class=n>0.239</td><td class=n>0.984</td><td class=w>A video, usually one voice. Usable with a per-key consistency filter.</td></tr>
+<tr><td>mls</td><td><code>(lang, first field)</code></td><td class=n><b>0.053</b></td><td class=n>0.9995</td><td class=n>35.8 %</td><td class=w><b>Real speaker ids</b> — the published MLS ones.</td></tr>
+<tr><td>commonvoice</td><td><code>cv_client_id</code> from the tar JSON</td><td class=n><b>0.153</b></td><td class=n>—</td><td class=n>2.6 %</td><td class=w><b>Real speaker ids.</b></td></tr>
+<tr><td>podcast</td><td>first field</td><td class=n>0.247</td><td class=n>0.866</td><td class=n>96.4 %</td><td class=w>A show / channel, predominantly one voice. Usable, but "one channel = one person" is not verified.</td></tr>
+<tr><td>eurospeech</td><td><code>country_videoid</code></td><td class=n><b>0.854</b></td><td class=n>0.998</td><td class=n>12.9 %</td><td class=w><b>Not a speaker key.</b> 85 % of gender variance sits <em>inside</em> a key.</td></tr>
+</table>
+
+<p>Three findings here are worth stating separately, because each one changes what a builder would do.</p>
+
+<ul>
+<li><b>Emilia has two uid schemes and the obvious rule breaks on half of it.</b> Audiobook-style uids
+look like <code>DE_B00000_S00000_W000000</code> (B = tar bucket — one bucket holds ~6,000 speakers, so
+B alone is <em>not</em> a speaker; S = speaker index within it). YODAS-style uids look like
+<code>DE_&lt;youtube_id&gt;_W000000</code>, and YouTube ids frequently contain underscores
+(<code>DE_TU-Z_DR-vYM_W000000</code>). Splitting on the first three fields returns the entire uid for
+those, i.e. one clip per "speaker", silently destroying ~54 % of the corpus. The correct universal
+rule is <b>strip the trailing <code>_W######</code></b>.</li>
+
+<li><b>EuroParl has no speaker identity anywhere.</b> Confirmed by extracting the per-utterance JSON
+out of the output tars: <code>src_meta</code> carries country, video id, transcript id, start/end
+seconds, CER and WER — nothing speaker-like. The keys are parliamentary sessions containing many MEPs,
+which is exactly what the 0.854 variance ratio says.</li>
+
+<li><b>Common Voice speaker ids <em>are</em> recoverable</b> — <code>cv_client_id</code>,
+<code>cv_age</code> and <code>cv_gender</code> survive inside <code>src_meta</code> in the
+per-utterance JSON in the data tars; they are merely absent from the index parquet. No join back to
+the original Common Voice release is needed. This should be promoted into the index.</li>
+</ul>
+
+<div class=note class=b>
+<b class=h>EuroParl's 7.7 M utterances contribute zero collages as things stand</b>
+Without a speaker id there is no way to build a same-speaker collage from it. The fix is available
+but is a project of its own: cluster the VoiceCLAP embeddings the pipeline already wrote next to
+every clip (<code>*.vclap.npy</code> inside the output tars) into per-session speaker identities.
+The same applies to Kartoffelphon, whose diarization labels are episode-scoped. Neither should be
+assumed into any plan until that clustering exists and has been checked.
+</div>
+
+<h3>7.2 Utterances per speaker — heavily skewed, as warned</h3>
+
+<table>
+<tr><th>Corpus / language</th><th class=n>Speakers</th><th class=n>Clips</th><th class=n>Mean</th><th class=n>p10</th><th class=n>p25</th><th class=n>Median</th><th class=n>p75</th><th class=n>p90</th><th class=n>p99</th><th class=n>Max</th></tr>
+<tr><td><b>emolia — all</b></td><td class=n>2,986,549</td><td class=n>81,824,581</td><td class=n>27.4</td><td class=n>1</td><td class=n>2</td><td class=n><b>8</b></td><td class=n>27</td><td class=n>66</td><td class=n>300</td><td class=n>3,354</td></tr>
+<tr><td>emolia — <b>de</b></td><td class=n>123,915</td><td class=n>2,600,078</td><td class=n>21.0</td><td class=n>—</td><td class=n>—</td><td class=n><b>5</b></td><td class=n>21</td><td class=n>57</td><td class=n>216</td><td class=n>1,770</td></tr>
+<tr><td>&nbsp;&nbsp;— de, audiobook half</td><td class=n>67,701</td><td class=n>594,353</td><td class=n>8.8</td><td class=n>—</td><td class=n>—</td><td class=n><b>2</b></td><td class=n>—</td><td class=n>—</td><td class=n>—</td><td class=n>—</td></tr>
+<tr><td>&nbsp;&nbsp;— de, YODAS half</td><td class=n>56,214</td><td class=n>2,005,725</td><td class=n>35.7</td><td class=n>—</td><td class=n>—</td><td class=n><b>17</b></td><td class=n>—</td><td class=n>—</td><td class=n>—</td><td class=n>—</td></tr>
+<tr><td>emolia — en</td><td class=n>1,607,731</td><td class=n>52,022,381</td><td class=n>32.4</td><td class=n>—</td><td class=n>—</td><td class=n>8</td><td class=n>—</td><td class=n>83</td><td class=n>348</td><td class=n>2,351</td></tr>
+<tr><td>commonvoice — <b>de</b> <span class="tag e">extrap.</span></td><td class=n>~44,800</td><td class=n>607,871</td><td class=n>13.6</td><td class=n>6</td><td class=n>9</td><td class=n>11</td><td class=n>18</td><td class=n>25</td><td class=n>37</td><td class=n>40</td></tr>
+<tr><td>mls — all</td><td class=n><b>307</b></td><td class=n>432,177</td><td class=n>1,407.7</td><td class=n>5.6</td><td class=n>20.5</td><td class=n>73</td><td class=n>550</td><td class=n>3,049</td><td class=n>21,551</td><td class=n>38,409</td></tr>
+<tr><td>mls — <b>de</b></td><td class=n><b>75</b></td><td class=n>72,242</td><td class=n>963.2</td><td class=n>—</td><td class=n>—</td><td class=n>80</td><td class=n>—</td><td class=n>2,072</td><td class=n>14,040</td><td class=n>22,188</td></tr>
+<tr><td>podcast — all <span class="tag e">channels</span></td><td class=n>330,571</td><td class=n>26,606,892</td><td class=n>80.5</td><td class=n>5</td><td class=n>17</td><td class=n>52</td><td class=n>114</td><td class=n>194</td><td class=n>393</td><td class=n>1,528</td></tr>
+<tr><td>podcast — <b>de</b> <span class="tag e">channels</span></td><td class=n>11,260</td><td class=n>948,155</td><td class=n>84.2</td><td class=n>—</td><td class=n>—</td><td class=n>63</td><td class=n>—</td><td class=n>184</td><td class=n>361</td><td class=n>984</td></tr>
+<tr><td><i>eurospeech — sessions, not speakers</i></td><td class=n><i>16,072</i></td><td class=n><i>7,706,046</i></td><td class=n><i>479.5</i></td><td class=n><i>70</i></td><td class=n><i>206</i></td><td class=n><i>373</i></td><td class=n><i>595</i></td><td class=n><i>1,049</i></td><td class=n><i>2,080</i></td><td class=n><i>3,594</i></td></tr>
+</table>
+
+<p>The skew is exactly the reason a mean misleads. German Emilia averages 21.0 clips per speaker but
+its <b>median is 5</b>, and 26,804 of its 123,915 speakers have exactly one clip. Quoting the mean
+alone would suggest every speaker can supply a 4-clip collage five times over; in fact
+<b>46 % of German Emilia speakers have fewer than 5 clips and can supply none at all</b>. The split
+between the two halves of Emilia is starker still: the German audiobook half has a median of
+<b>2</b> clips per speaker, the German YODAS half a median of <b>17</b>.</p>
+
+<p>Full histogram — Emilia all / podcast / German Emilia:
+1 clip — 530,423 / 11,709 / 26,804 ·
+2–4 — 630,771 / 19,931 / 30,346 ·
+5–9 — 442,084 / 23,031 / 18,489 ·
+10–19 — 436,682 / 34,412 / 16,005 ·
+20–49 — 534,845 / 70,610 / 17,711 ·
+50–99 — 229,957 / 73,894 / 9,263 ·
+100–199 — 111,008 / 65,895 / 3,821 ·
+200–499 — 65,931 / 29,956 / 1,426 ·
+500+ — 4,848 / 1,133 / 50.</p>
+
+<h3>7.3 Emotional variation within one speaker — the crux</h3>
+
+<p>For every speaker with ≥ 5 clips: how many distinct <code>top_emotion</code> labels their clips
+carry, and the mean L2 distance of their clips' 40-dimensional emotion vectors from their own
+centroid — their emotional "radius". The radius is the better measure because it uses all 40
+continuous dimensions rather than an argmax.</p>
+
+<table>
+<tr><th>Corpus / lang</th><th class=n>Speakers ≥5 clips</th><th class=n>Distinct top-emotions<br>mean / p50 / p90</th><th class=n>Emotion radius<br>p10</th><th class=n>p50</th><th class=n>p90</th><th class=n>max</th></tr>
+<tr><td>emolia — all</td><td class=n>1,825,355</td><td class=n>3.49 / 3 / 6</td><td class=n>0.900</td><td class=n><b>1.466</b></td><td class=n>2.208</td><td class=n>4.595</td></tr>
+<tr><td>emolia — de</td><td class=n>66,765</td><td class=n>3.49 / 3 / 7</td><td class=n>1.133</td><td class=n><b>1.628</b></td><td class=n>2.141</td><td class=n>3.452</td></tr>
+<tr><td>commonvoice — de</td><td class=n>3,993</td><td class=n>4.10 / 4 / 7</td><td class=n>0.931</td><td class=n><b>1.253</b></td><td class=n>1.680</td><td class=n>2.598</td></tr>
+<tr><td>mls — all</td><td class=n>279</td><td class=n>— / 6 / 20</td><td class=n>1.570</td><td class=n><b>2.028</b></td><td class=n>2.416</td><td class=n>2.875</td></tr>
+<tr><td>mls — de</td><td class=n>74</td><td class=n>7.78 / 5.5 / 17</td><td class=n>—</td><td class=n><b>2.039</b></td><td class=n>2.400</td><td class=n>—</td></tr>
+<tr><td>podcast — all</td><td class=n>298,931</td><td class=n>5.37 / 4 / 11</td><td class=n>1.599</td><td class=n><b>2.049</b></td><td class=n>2.430</td><td class=n>4.361</td></tr>
+<tr><td>podcast — de</td><td class=n>10,691</td><td class=n>4.31 / 4 / 8</td><td class=n>1.582</td><td class=n><b>1.933</b></td><td class=n>2.265</td><td class=n>3.614</td></tr>
+<tr><td><i>eurospeech — sessions</i></td><td class=n><i>15,660</i></td><td class=n><i>— / 5 / 8</i></td><td class=n><i>1.524</i></td><td class=n><i>1.864</i></td><td class=n><i>2.128</i></td><td class=n><i>2.558</i></td></tr>
+</table>
+
+<p>Those radii read well against the median inter-emotion centroid distance of <b>2.027</b> from
+section 6.1: a typical podcast speaker's clips scatter 2.05 from their own centre, i.e. a full
+emotion-to-emotion hop's worth of spread, and a typical German Emilia speaker 1.63. That is the
+optimistic reading. The <code>top_emotion</code> column gives the pessimistic one, and it has to be
+shown next to it.</p>
+
+<table>
+<tr><th>Corpus</th><th class=n>Clips (exact)</th><th>Most common top_emotion</th><th>2nd</th><th>Top two combined</th></tr>
+<tr><td>eurospeech</td><td class=n>7,706,046</td><td><b>Interest 86.2 %</b></td><td>Concentration 8.3 %</td><td class=n>94.5 %</td></tr>
+<tr><td>podcast</td><td class=n>26,606,892</td><td><b>Interest 86.1 %</b></td><td>Amusement 3.1 %</td><td class=n>89.2 %</td></tr>
+<tr><td>podcast — de</td><td class=n>948,155</td><td><b>Interest 89.9 %</b></td><td>Concentration 4.0 %</td><td class=n>93.9 %</td></tr>
+<tr><td>mls</td><td class=n>432,177</td><td><b>Interest 80.1 %</b></td><td>Concentration 11.4 %</td><td class=n>91.5 %</td></tr>
+<tr><td>emolia</td><td class=n>81,824,581</td><td><b>Interest 72.8 %</b></td><td>Concentration 17.9 %</td><td class=n>90.7 %</td></tr>
+<tr><td>emolia — de</td><td class=n>2,600,078</td><td><b>Interest 73.3 %</b></td><td>Concentration 17.0 %</td><td class=n>90.3 %</td></tr>
+<tr><td>commonvoice</td><td class=n>7,062,615</td><td><b>Concentration 47.6 %</b></td><td>Interest 20.2 %</td><td class=n>67.8 %</td></tr>
+</table>
+
+<div class=note class=b>
+<b class=h>Two of forty emotions account for 87–95 % of every natural corpus</b>
+Anger is 0.4 % of MLS and 0.1 % of EuroParl. There are two readings and they are not exclusive.
+<b>(a)</b> Audiobooks, parliament and podcasts really are emotionally flat next to acted drama —
+which is the correct and expected answer for EuroParl. <b>(b)</b> The Empathic-Insight argmax has a
+strong Interest prior: the identical pattern appears in our <em>synthetic</em> corpus, where Interest
+is the argmax for 65 % of clips even though that corpus is <em>constructed</em> to be exactly one
+fortieth each of 40 emotions and the intended label is known to be right. Section 6 measured that
+head's per-clip 40-way accuracy at 18 %.<br><br>
+So the honest position: <b>we cannot currently separate "this speaker is flat" from "our emotion head
+defaults to Interest"</b>. The "distinct top_emotion labels" criterion is a weak instrument, the
+qualification gate should lean on the continuous 40-dim radius instead, and answering the
+Interest-prior question is a prerequisite for any natural-corpus collage build.
+</div>
+
+<h3>7.4 How many speakers actually qualify</h3>
+
+<p>Three gates. The distance thresholds are per-corpus, so each gate means the same thing relative to
+its own corpus rather than importing a threshold from elsewhere.</p>
+<ul>
+<li><b>Loose</b> — ≥ 6 clips and ≥ 2 distinct top-emotions.</li>
+<li><b>Medium</b> — ≥ 12 clips, ≥ 3 distinct top-emotions, emotion radius above that corpus's median.</li>
+<li><b>Strict</b> — ≥ 20 clips, ≥ 4 distinct top-emotions, emotion radius in that corpus's top quartile.</li>
+</ul>
+
+<table>
+<tr><th>Corpus</th><th class=n>Total speakers</th><th class=n>Loose</th><th class=n>Medium</th><th class=n>Medium clips</th><th class=n>Strict</th><th class=n>Strict clips</th></tr>
+<tr><td><b>emolia</b></td><td class=n>2,986,549</td><td class=n>1,554,686</td><td class=n><b>514,745</b> <span class=sub>17.2 %</span></td><td class=n>36,434,725</td><td class=n>197,602 <span class=sub>6.6 %</span></td><td class=n>16,894,650</td></tr>
+<tr><td>commonvoice <span class="tag e">extrap.</span></td><td class=n>~464 k</td><td class=n>~464 k</td><td class=n><b>~130,000</b></td><td class=n>—</td><td class=n>~27,000</td><td class=n>—</td></tr>
+<tr><td>mls</td><td class=n>307</td><td class=n>267</td><td class=n><b>124</b> <span class=sub>40.4 %</span></td><td class=n>239,969</td><td class=n>60</td><td class=n>128,900</td></tr>
+<tr class=tot><td>releasable subtotal</td><td class=n>~3.45 M</td><td class=n>~2.02 M</td><td class=n><b>~645,000</b></td><td class=n>~36.7 M</td><td class=n>~225,000</td><td class=n>~17.0 M</td></tr>
+<tr><td>podcast <span class="tag e">internal only, channels</span></td><td class=n>330,571</td><td class=n>259,200</td><td class=n>128,762</td><td class=n>16,260,569</td><td class=n>60,952</td><td class=n>8,294,586</td></tr>
+<tr><td><i>eurospeech — sessions, unusable</i></td><td class=n><i>16,072</i></td><td class=n><i>15,559</i></td><td class=n><i>7,704</i></td><td class=n><i>3,812,797</i></td><td class=n><i>3,732</i></td><td class=n><i>2,000,386</i></td></tr>
+</table>
+
+<h4>German, which is the number the owner asked for</h4>
+
+<table>
+<tr><th>Corpus</th><th class=n>Loose speakers / clips</th><th class=n>Medium speakers / clips</th><th class=n>Strict speakers / clips</th></tr>
+<tr><td><b>emolia de</b></td><td class=n>55,331 / 2,385,253</td><td class=n><b>23,324</b> / 1,518,003</td><td class=n>8,024 / 585,507</td></tr>
+<tr><td>&nbsp;&nbsp;— audiobook half</td><td class=n>16,446</td><td class=n>5,973</td><td class=n>2,350 / 152,864</td></tr>
+<tr><td>&nbsp;&nbsp;— YODAS half</td><td class=n>38,885</td><td class=n>17,351</td><td class=n>5,674 / 432,643</td></tr>
+<tr><td>commonvoice de <span class="tag e">extrap. ×10.37</span></td><td class=n>39,896 / ~589,600</td><td class=n><b>11,177</b> / ~222,000</td><td class=n>2,364 / ~60,400</td></tr>
+<tr><td>mls de</td><td class=n>70 / 72,212</td><td class=n><b>35</b> / 55,722</td><td class=n>17 / 32,684</td></tr>
+<tr class=tot><td><b>releasable German total</b></td><td class=n><b>95,297 / ~3.05 M</b></td><td class=n><b>34,536 / ~1.80 M</b></td><td class=n><b>10,405 / ~679 k</b></td></tr>
+<tr><td>podcast de <span class="tag e">internal only</span></td><td class=n>9,511 / 919,741</td><td class=n>3,038 / 364,656</td><td class=n>933 / 112,397</td></tr>
+<tr><td><i>eurospeech de — sessions</i></td><td class=n colspan=3><i>795 sessions / 456,909 clips — contributes nothing until clustered</i></td></tr>
+</table>
+
+<p>For reference, strict-gate speakers in the other big languages: Emilia en 149,974 · zh 27,258 ·
+fr 6,402 · ko 4,353 · ja 1,591; podcast en 54,010 · es 3,948 · pt 907.</p>
+
+<div class=note>
+<b class=h>What the natural corpora actually contribute</b>
+<b>Releasable and usable today: ~645,000 qualifying speakers holding ~36.7 M clips</b> at the medium
+gate — Emilia 514,745, Common Voice ~130,000 (extrapolated), MLS 124.
+<b>For German: 34,536 speakers holding ~1.80 M clips.</b>
+<b>Internal-only:</b> the podcast corpus adds 128,762 channel-keys / 16.3 M clips, reported
+separately and never folded into the releasable figure.
+<br><br>
+Against the synthetic corpus's <b>500</b> voices that is a 1,300-fold increase in speaker diversity,
+and it is the strongest argument for a v2 built on natural material. Against the <em>emotion</em>
+requirement it is much weaker: those speakers' clips are 73–86 % labelled Interest, their arcs would
+have to be discovered rather than commissioned, and the discovery instrument is a head with 18 %
+per-clip accuracy.
+</div>
+
+<h3>7.5 Duration of qualifying clips — and a length problem</h3>
+
+<table>
+<tr><th>Corpus (strict gate, German)</th><th class=n>Mean clip</th><th class=n>Median</th><th class=n>3-clip collage</th><th class=n>6-clip collage</th></tr>
+<tr><td>commonvoice de</td><td class=n>5.51 s</td><td class=n>5.40 s</td><td class=n>~16 s</td><td class=n>~32 s</td></tr>
+<tr><td>emolia de</td><td class=n>9.45 s</td><td class=n>7.87 s</td><td class=n>~24 s</td><td class=n>~47 s</td></tr>
+<tr><td>podcast de</td><td class=n>13.30 s</td><td class=n>11.44 s</td><td class=n>~34 s</td><td class=n>~69 s</td></tr>
+<tr><td>mls de</td><td class=n>14.94 s</td><td class=n>14.85 s</td><td class=n>~45 s</td><td class=n><b>~89 s</b></td></tr>
+</table>
+<p>German Emilia lands almost exactly on the synthetic corpus's ~40 s, so a mixed build would be
+length-consistent. MLS and EuroParl clips are hard-capped near 15 s and would blow through the
+75-second ceiling of section 10.6 at L ≥ 5 — for those sources the length rule has to be 3–4 clips,
+not 3–6.</p>
+
+<h3>7.6 Other things the full pass turned up</h3>
+<ul>
+<li><b>Expressiveness differs enormously by source.</b> Mean <code>genuineness_0_6</code>: podcast
+<b>3.97</b>, Emilia and EuroParl in between, MLS <b>1.05</b>, Common Voice <b>0.95</b>. The
+read-aloud corpora are flat-affect by this measure, and the single most expressive body of natural
+material we have is the one that cannot be released.</li>
+<li><b>No emotion head is constant, but several are nearly dead.</b> In EuroParl three heads have
+std &lt; 0.05 (Infatuation 0.033, Pain 0.036, Sexual Lust 0.044); Pain, Infatuation and Jealousy are
+low-variance in every corpus. No NaNs anywhere; <code>top_emotion_value</code> spans 0.05–5.65 with
+no clipping artefact. So the heads are running — some of them just have nothing to detect in
+parliamentary speech, which is reassuring rather than alarming.</li>
+<li><b>MLS has 307 speakers in total</b> — 75 of them German — across 432,177 clips. Enormous clip
+counts per speaker (max 38,409) and negligible speaker diversity. Eleven speaker ids collide across
+languages, so it must be keyed by <code>(lang, id)</code> or it will merge two different people.</li>
+<li><b>Common Voice clips-per-client tops out at exactly 40</b> in the shards scanned, and CV's usual
+power users with hundreds of recordings are absent. Either the shard packing caps them or this
+subset does; that was not resolved, so the ×10.37 German extrapolation carries that assumption.</li>
+<li><b>The Emilia YODAS half needs a per-key voice filter.</b> Its keys are videos, at a 0.239
+consistency ratio, so a fraction contain more than one speaker. Dropping keys whose within-key
+<code>vn_GEND_reg</code> spread exceeds a threshold is cheap and was <em>not</em> applied to the
+counts above — so the YODAS-derived speaker numbers are an upper bound.</li>
+<li>Minor: <code>vn_VALE_reg</code> does not exist; the valence heads are <code>vn_VALN_reg</code>
+and <code>vn_VALS_reg</code>.</li>
+</ul>
+
+<h3>7.7 Why v1 should still be synthetic-only</h3>
+<ol>
+<li><b>The arcs can be commissioned rather than discovered.</b> In the synthetic corpus we
+<em>asked</em> for Anger and we know we asked; the label is exact. In Emilia we would have to detect
+that a speaker moved from anger to sadness using a head that is right 18 % of the time per clip. The
+same 40-dim vector supports both, but only one of them has ground truth.</li>
+<li><b>Emotional coverage is guaranteed by construction.</b> Every one of the 500 synthetic voices
+has all 40 emotions at all 4 settings in both languages. In Emilia a speaker's available emotions are
+whatever they happened to say, and 73 % of it reads as Interest. Filling a 12-archetype × 500-voice
+coverage matrix is a scheduling problem for the synthetic corpus and a search problem — possibly an
+infeasible one — for the natural corpora.</li>
+<li><b>Half the synthetic corpus is German</b> (804,976 of 1,609,947 sampled candidates), against
+3.2 % of Emilia. For a German-heavy deliverable that ratio is decisive.</li>
+<li><b>The natural corpora are not wasted — they are v2.</b> Emilia alone offers 514,745 qualifying
+speakers against the synthetic corpus's 500, which is exactly the axis the synthetic corpus is weak
+on. But EuroParl and the podcast need the VoiceCLAP clustering first, Common Voice needs its
+<code>cv_client_id</code> promoted into the index, and all of them need an honest answer on the
+Interest-prior question before anyone builds arcs out of them.</li>
+</ol>
+
+<h2 id=comb>8 · Combinatorics, and why it is the wrong number to plan with</h2>
+
+<p>Quality gating first. From each group of 32/48 takes we keep the best <i>k</i> by genuineness and
+vocal-burst blend. That fixes the size of the pool a collage is drawn from:</p>
+
+<table>
+<tr><th>Gate</th><th class=n>Clips per voice</th><th class=n>Clips, 500 voices</th><th class=n>% of candidates kept</th></tr>
+<tr><td>top-1 per group</td><td class=n>842</td><td class=n>421,000</td><td class=n>2.09 %</td></tr>
+<tr><td>top-3 per group</td><td class=n>2,526</td><td class=n>1,263,000</td><td class=n>6.27 %</td></tr>
+<tr><td>top-5 per group</td><td class=n>4,210</td><td class=n>2,105,000</td><td class=n>10.46 %</td></tr>
+</table>
+
+<p>Collages are <b>ordered</b> sequences of 3–6 distinct clips from one voice's pool. The count is
+the sum of permutations <i>P</i>(<i>N</i>,<i>L</i>) for <i>L</i> = 3…6:</p>
+
+<table>
+<tr><th>Gate</th><th class=n>L=3</th><th class=n>L=4</th><th class=n>L=5</th><th class=n>L=6</th><th class=n>Total, 500 voices</th></tr>
+<tr><td>top-1</td><td class=n>5.95×10<sup>8</sup></td><td class=n>4.99×10<sup>11</sup></td><td class=n>4.18×10<sup>14</sup></td><td class=n>3.50×10<sup>17</sup></td><td class=n>1.75×10<sup>20</sup></td></tr>
+<tr><td>top-3</td><td class=n>1.61×10<sup>10</sup></td><td class=n>4.06×10<sup>13</sup></td><td class=n>1.02×10<sup>17</sup></td><td class=n>2.58×10<sup>20</sup></td><td class=n><b>1.29×10<sup>23</sup></b></td></tr>
+<tr><td>top-5</td><td class=n>7.46×10<sup>10</sup></td><td class=n>3.14×10<sup>14</sup></td><td class=n>1.32×10<sup>18</sup></td><td class=n>5.55×10<sup>21</sup></td><td class=n>2.78×10<sup>24</sup></td></tr>
+</table>
+<p class=sub>Per-voice figures; the last column is × 500. Numbers this size are not a resource.</p>
+
+<p>Even after imposing the emotional-continuity constraint the number stays absurd. With 40 start
+emotions, an average of 5.5 permitted next-emotions at step radius 1.3, four intensity settings, two
+languages and <i>k</i> takes per condition, a length-6 collage at top-1 has
+40 × 5.5<sup>5</sup> × (4·2·1)<sup>6</sup> ≈ 5.3×10<sup>10</sup> forms per voice, or
+<b>2.6×10<sup>13</sup></b> across the corpus <span class="tag e">estimated</span> — still nine
+orders of magnitude more than anyone would build.</p>
+
+<div class=note class=b>
+<b class=h>Why 10<sup>23</sup> is the wrong number</b>
+Because the audio underneath is finite and small. At top-5 the entire pool is <b>2,105,000 clips</b>.
+A collage consumes 4.5 clips on average. So:
+<table style="margin-top:10px">
+<tr><th>Target</th><th class=n>Clip slots needed</th><th class=n>Times each clip is reused</th></tr>
+<tr><td>1 M collages</td><td class=n>4.5 M</td><td class=n>2.1×</td></tr>
+<tr><td>10 M collages</td><td class=n>45 M</td><td class=n>21×</td></tr>
+<tr><td>100 M collages</td><td class=n>450 M</td><td class=n><b>214×</b></td></tr>
+</table>
+A 100 M-collage dataset is 214 rearrangements of the same two million seconds of audio. The
+information content does not grow with the collage count; only the storage bill does. If you want a
+corpus in which no clip appears more than four times — a defensible upper bound before a model starts
+memorising the constituent clips rather than learning the transitions — the ceilings are
+<b>374 k</b> collages at top-1, <b>1.12 M</b> at top-3 and <b>1.87 M</b> at top-5.
+</div>
+
+<p>The counter-argument is that reuse is not necessarily bad: a clip appearing in twenty different
+arcs teaches the model twenty different <em>contexts</em> for the same delivery, which is arguably
+the point. That is fair up to a limit. But it is a reason to choose reuse deliberately with a cap,
+not a reason to treat 10<sup>23</sup> as headroom. The number that matters is not how many collages
+exist; it is <b>how many distinct trajectory shapes × voices × languages we cover</b>.</p>
+
+
+<h2 id=cover>9 · Coverage strategy and trajectory archetypes</h2>
+
+<p>Design the dataset as a <b>stratified sample over trajectory shapes</b>, then fill each stratum
+with as many voices and conditions as the budget allows. Concretely, three nested layers:</p>
+
+<h3>Layer 1 — trajectory archetypes</h3>
+<p>Twelve shapes. Each is a directed walk in the 40-D emotion space whose consecutive steps are
+≤ 1.3 apart, so continuity is <em>structural</em> — the planner cannot emit a discontinuous arc —
+rather than something checked afterwards. The example paths below are not illustrative: they are the
+actual shortest paths under that constraint, computed from the measured centroids, and the step and
+span figures are what the planner would record. <span class="tag m">measured</span></p>
+
+<table>
+<tr><th>#</th><th>Archetype</th><th>Direction</th><th>Computed example path</th><th class=n>Max step</th><th class=n>Span</th><th class=n>Share</th></tr>
+<tr><td>1</td><td><b>Cooling anger</b></td><td>hostility ↓, valence ↓</td><td class=w>Anger → Impatience → Bitterness → Disappointment</td><td class=n>1.20</td><td class=n>2.20</td><td class=n>12 %</td></tr>
+<tr><td>2</td><td><b>Collapse</b></td><td>valence ↓, arousal ↓</td><td class=w>Shame → Embarrassment → Disappointment → Emotional Numbness</td><td class=n>1.29</td><td class=n>1.86</td><td class=n>10 %</td></tr>
+<tr><td>3</td><td><b>Souring joy</b></td><td>valence ↓, hostility ↑</td><td class=w>Elation → Interest → Teasing → Contempt → Bitterness</td><td class=n>1.30</td><td class=n>2.77</td><td class=n>10 %</td></tr>
+<tr><td>4</td><td><b>Recovery</b></td><td>valence ↑</td><td class=w>Sadness → Longing → Infatuation → Contentment</td><td class=n>1.27</td><td class=n>2.30</td><td class=n>9 %</td></tr>
+<tr><td>5</td><td><b>Ignition</b></td><td>hostility ↑</td><td class=w>Contemplation → Interest → Teasing → Contempt → Anger</td><td class=n>1.27</td><td class=n>2.73</td><td class=n>9 %</td></tr>
+<tr><td>6</td><td><b>Rueful turn</b></td><td>hostility ↓ through a warm exit</td><td class=w>Anger → Contempt → Teasing → Amusement</td><td class=n>1.27</td><td class=n>2.12</td><td class=n>8 %</td></tr>
+<tr><td>7</td><td><b>Dawning realisation</b></td><td>confusion → clarity</td><td class=w>Confusion → Doubt → Contemplation → Awe</td><td class=n>1.19</td><td class=n>1.96</td><td class=n>8 %</td></tr>
+<tr><td>8</td><td><b>Vindication</b></td><td>valence ↑↑ from a low start</td><td class=w>Helplessness → Sadness → Longing → Infatuation → Pride</td><td class=n>1.27</td><td class=n>3.20</td><td class=n>7 %</td></tr>
+<tr><td>9</td><td><b>Warming</b></td><td>hostility ↓↓</td><td class=w>Contempt → Teasing → Interest → Infatuation → Affection</td><td class=n>1.27</td><td class=n>2.54</td><td class=n>7 %</td></tr>
+<tr><td>10</td><td><b>Fear cascade</b></td><td>valence ↓, engagement lost</td><td class=w>Interest → Infatuation → Longing → Sadness → Helplessness</td><td class=n>1.27</td><td class=n>2.83</td><td class=n>7 %</td></tr>
+<tr><td>11</td><td><b>Return</b> (A→B→A′)</td><td>out and back, ends at a different <em>intensity</em> of the same emotion</td><td class=w>Amusement → Teasing → Contempt → Teasing → Amusement (contained)</td><td class=n>1.30</td><td class=n>0.00*</td><td class=n>7 %</td></tr>
+<tr><td>12</td><td><b>Burst-pivot</b></td><td>arc hinges on a scream / sob / laugh</td><td class=w>Anger → Impatience → <i>pain_scream</i> → Bitterness → Disappointment → Emotional Numbness</td><td class=n>1.29</td><td class=n>3.01</td><td class=n>6 %</td></tr>
+</table>
+<p class=sub>*Archetype 11 is the one exception to the span rule: it returns to its start, so its
+emotion-space span is zero by construction and it is instead required to change <em>intensity
+condition</em> between the two visits (A→D or C→B). It is the only archetype where the intensity
+axis carries the arc.</p>
+
+<p>Notes on the shares. Archetypes 1–5 and 8–10 are monotone in one direction and take 71 % between
+them, because a monotone arc is the simplest thing a model must learn and the easiest for a human to
+verify by ear. Archetypes 6, 7 and 11 turn, and take 23 %; these make the dataset interesting and
+are also the ones most likely to be built wrong, so they are deliberately not the majority. Archetype
+12 gets 6 % — enough to teach the burst pivot, small enough that the exempt-seam material stays a
+labelled minority you can drop wholesale if it turns out to be broken.</p>
+
+<div class=note class=w>
+<b class=h>Two emotions cannot participate in a gradual arc at all</b>
+Triumph and Thankfulness are isolated at radius 1.3 — Triumph's nearest neighbour is Interest at
+1.38, Thankfulness's is Affection at 1.93. They can only be reached by a step that <em>is</em> a
+jump. Rather than pretend otherwise, they are allowed a relaxed 2.0 radius on their entry and exit
+steps, and every such step is recorded as <code>relaxed: true</code>. If the listening test says
+those seams sound wrong, the fix is one filter, not a rebuild. (This is also a reason to doubt the
+Thankfulness head specifically: its mean 40-D distance to the other 39 emotions is <b>3.22</b>
+against a corpus median inter-emotion distance of 2.03 — it is either a genuinely distinctive
+emotion or a mis-calibrated output dimension. Worth a look before the build.)
+</div>
+
+<h3>Layer 2 — within each archetype, sample across the other axes</h3>
+<ul>
+<li><b>Voice</b>: uniform over all 500. Never let a voice exceed 1/300 of any archetype's budget.</li>
+<li><b>Language</b>: 50/50 DE/EN, matching the corpus. <b>Do not mix languages inside a collage</b> —
+that is a different research question and it would confound the arc.</li>
+<li><b>Length</b>: L ∈ {3,4,5,6} at 30/30/25/15 %. Short arcs are more likely to be clean; long ones
+carry more transitions per item. Weighted toward the short end because seam risk compounds.</li>
+<li><b>Intensity path</b>: the four condition settings A–D are an intensity/containment axis
+(A and C are the loud ones: 57.3 % and 53.7 % below the old floor; B and D the contained ones at
+43.2 % and 42.7 %). Sample intensity <em>trajectories</em> too — rising, falling, and flat — because
+"the same emotion, held but contained" is itself a transition worth learning.</li>
+<li><b>VoiceNet dimensions</b>: 15 % of collages should draw at least one clip from the voicenet
+block rather than the emotion block, so the dataset contains arcs where the <em>manner</em> changes
+(tempo, breathiness, brightness) while the emotion holds.</li>
+</ul>
+
+<h3>Layer 3 — coverage audit, not volume audit</h3>
+<p>The release criterion is a filled coverage matrix, not a collage count. Ship when every cell of
+<code>12 archetypes × 500 voices × 2 languages × 4 lengths</code> = 48,000 cells has at least 20
+collages, which is <b>960,000 collages minimum</b> and lands naturally near the 1 M scenario. Publish
+the coverage matrix with the dataset; it is more informative than the row count.</p>
+
+
+<h2 id=rules>10 · Procedural rules — the builder spec</h2>
+
+<p>Concrete numbers, each with its basis. A builder should be able to implement this without asking
+another question.</p>
+
+<h3>10.1 Candidate selection</h3>
+<pre>DUR_FLOOR      = 4.0 s      # applied BEFORE ranking — see below, this one is load-bearing
+DUR_CEIL       = 20.0 s
+GATE           = top-5 per condition group by z(genuineness) + z(vocal_burst_blend),
+                 z-scored within the group so groups are comparable
+REJECT         if empty == True  or  asr WER > 0.40  (transcript mismatch = broken take)</pre>
+
+<div class=note class=b>
+<b class=h>The duration floor is not a detail. Case six.</b>
+Ranking naively by genuineness + burst blend picks a take shorter than 3 seconds <b>12.6 %</b> of the
+time, against a base rate of 2.47 % — a 5.1× enrichment for degenerate takes
+<span class="tag m">measured</span>. 4.0 % of top-1 picks are under one second. Inspecting them, the
+"best" Anger take for one voice is a 0.1-second clip containing the single word "Yeah."
+(genuineness 2.18/6, blend 6.74/10, <code>spk_sim</code> 0.000); the "best" Amusement take is a
+0.9-second "Seriously?". These are truncated generations that score highly because a short breathy
+fragment reads as both genuine and burst-like.<br><br>
+This project has already produced five separate cases of a scorer confidently rewarding broken
+audio. <b>This is the sixth</b>, and it was found by looking, not by the scorer flagging it. The
+existing pipeline <code>score</code> column already guards against it (0.48 % under 3 s), so use
+composite score or add the floor — but do not rank on genuineness+blend alone.<br><br>
+The fix is nearly free: a 4-second floor removes 3.9 % of candidates and <b>99.99 % of groups still
+retain ≥ 5 survivors</b>. It also raises the selected pool's mean duration from 9.03 s to 10.09 s and
+its mean <code>spk_sim</code> from 0.359 to 0.385.
+</div>
+
+<h3>10.2 Silence trimming</h3>
+<p>Measured on 400 decoded clips from one voice's candidate tar
+(<code>anime_000/PPILOT2/cands-000.tar</code>, 48 kHz):</p>
+<table>
+<tr><th>Quantity</th><th class=n>Mean</th><th class=n>Median</th><th class=n>p90</th><th class=n>p95</th><th class=n>Max</th></tr>
+<tr><td>Leading silence</td><td class=n>0.267 s</td><td class=n>0.200 s</td><td class=n>0.582 s</td><td class=n>0.801 s</td><td class=n>2.94 s</td></tr>
+<tr><td>Trailing silence</td><td class=n>0.224 s</td><td class=n>0.100 s</td><td class=n>0.560 s</td><td class=n>0.763 s</td><td class=n>2.68 s</td></tr>
+</table>
+<p>Together that is <b>4.12 %</b> of total duration — small on average, but the p95 of 0.8 s is
+exactly the kind of gap that makes a seam sound like two files played in sequence, and the 2.94 s
+maximum is fatal.</p>
+<pre>METHOD    energy-based, 20 ms frames, RMS in dB
+REF       the clip's own 95th-percentile frame level  (not a global constant — clip
+          loudness varies, see 10.4)
+THRESHOLD ref - 35 dB, clamped to a floor of -60 dBFS
+TRIM      cut to the first and last frame above threshold, then RESTORE 30 ms of the
+          original signal at each end as a pad
+FALLBACK  if no frame exceeds threshold, the clip is silent -> reject it entirely</pre>
+<p>The −35 dB relative threshold is chosen because it sits below any voiced speech frame but above
+room tone and MP3 pre-echo; the 30 ms pad exists so that a plosive or breath onset is not clipped off
+the front of the word, which is a much more audible artefact than a 30 ms gap. A voice-activity
+detector (webrtcvad) is the obvious alternative and would be more robust on noisy natural-corpus
+audio; for our synthetic material, which has no room tone, the energy method is sufficient and 100×
+cheaper. <b>Use VAD for the natural corpora, energy for the synthetic.</b></p>
+
+<h3>10.3 Joining — butt-join with a micro-fade, not a crossfade</h3>
+<pre>JOIN      butt-join with a 15 ms equal-power fade-out on the outgoing clip and a 15 ms
+          fade-in on the incoming one, overlapping — i.e. a 15 ms crossfade, no more
+GAP       0 ms between speech. Optionally insert a deliberate pause (see below).</pre>
+<p>Reasoning: a real crossfade of 50–200 ms would blend two different phonations and produce an
+audible "doubling" at every seam — a signature artefact that a model would learn as a feature of the
+data rather than of speech. 15 ms is under one pitch period at 70 Hz and shorter than any phoneme,
+so it removes the click from the waveform discontinuity without blending content. It is the
+smallest fade that reliably kills the click at 48 kHz.</p>
+<p><b>Deliberate pauses.</b> An emotional transition in real speech usually has a breath or a beat in
+it. Insert a pause at a seam with probability 0.5, drawn from N(280 ms, 90 ms) clipped to
+[120, 600 ms], filled with 40 dB-down room tone rather than digital silence (digital silence between
+two speech segments is itself an artefact a model can key on). Always insert a pause of at least
+250 ms at a burst-exempt seam — a scream does not run straight into a sentence.</p>
+
+<h3>10.4 Loudness matching</h3>
+<p>Measured across the same 400 clips: RMS level mean −23.20 dBFS, standard deviation 1.78 dB,
+p05→p95 range <b>4.65 dB</b>; no clipping (peak &gt; 0.99 in 0/400).</p>
+<pre>TARGET    normalise each clip to -23 LUFS integrated (EBU R128) BEFORE joining
+BUT       preserve up to +/-3 dB of the clip's original deviation from the collage mean,
+          because loudness IS part of the emotion: a shouted line should stay louder
+          than a whispered one.
+RULE      final = clamp(original_lufs - collage_mean_lufs, -3, +3) + (-23)
+PEAK      true-peak limit the finished collage at -1.0 dBTP
+CHECK     reject any seam whose post-normalisation level step exceeds 4 dB</pre>
+<p>The ±3 dB window is the compromise between two failure modes. Full normalisation flattens the
+dynamics and destroys half the emotional information; no normalisation leaves 4.65 dB steps at
+seams, which is well above the ~1 dB just-noticeable difference and reads as an edit. 3 dB is a
+factor of two in power — clearly audible as expressive dynamics, not as a mistake.</p>
+
+<h3>10.5 Emotional continuity</h3>
+<pre>SPACE       the 40 measured Empathic-Insight centroids, FULL 40 dimensions.
+            (The PC1/PC2 plane of section 6.1 is for reading and for the direction
+             check only — it carries 41% of the variance and has no arousal axis.)
+STEP        ||centroid(e_i) - centroid(e_i+1)|| &lt;= 1.3
+            1.3 is 64% of the median inter-emotion distance (2.027), gives 5.5 mean
+            neighbours, and strands only Triumph and Thankfulness.
+RELAX       Triumph and Thankfulness may use radius 2.0 on their entry/exit step.
+            Such steps are recorded as relaxed:true and are filterable.
+SPAN        the FULL arc must move &gt;= 1.75 end-to-end. 1.75 is the p25 of the span
+            achievable by 3-6 step paths (p10 1.56, median 2.12), so the rule keeps
+            the top three quarters of possible arcs and rejects the ones that
+            wander without going anywhere.
+            EXCEPTION archetype 11 (Return), which must instead change intensity
+            condition between its two visits to the same emotion.
+DISTINCT    2 or 3 distinct emotion LABELS per collage; a 4th is allowed only at L=6.
+REPEATS     the same (emotion, condition) pair may not appear twice in one collage;
+            the same emotion at a DIFFERENT condition may, and is how "the same
+            feeling, contained" transitions get built.
+DIRECTION   consecutive steps must not reverse direction by more than 120 degrees in
+            the PC1/PC2 plane, except at the single designated turn of archetypes
+            6, 7 and 11. This is what stops a "gradual" arc from zig-zagging.
+SOFT CHECK  the per-clip 40-dim vectors should be monotone along the arc direction
+            for &gt;= 60% of steps. ADVISORY ONLY, recorded, never enforced — per-clip
+            emotion recovery is 18% (section 6), so enforcing it would reject
+            mostly-correct arcs on measurement noise. Its rate over the corpus is a
+            useful health metric: if it falls near chance, the adapters are not
+            firing and the whole dataset is mislabelled.</pre>
+
+<h3>10.6 Length limits</h3>
+<pre>CLIPS     3 to 6
+TOTAL     12 s minimum, 75 s maximum (reject outside)
+EXPECTED  mean 40.4 s at L~4.5 with the measured 9.30 s selected-clip mean and 3.5%
+          net trim
+</pre>
+<p>The 75-second ceiling exists because the annotation stack pads to 30 s per window: a 75 s item
+costs three windows, and beyond that the cost per collage stops being predictable. The 12 s floor
+ensures even an L=3 collage of short clips is long enough to contain an audible arc.</p>
+
+<h3>10.7 Metadata every collage must carry</h3>
+<pre>collage_id, tier ("rel"|"int"), voice, language, archetype_id, n_clips,
+components: [ {uid, source_dataset, emotion, condition, block, dur_trimmed,
+               lead_trim_s, tail_trim_s, lufs_before, lufs_after,
+               genuineness, blend, quality} ],
+seams:      [ {ecapa_cos, wavlm_agree, exempt, exempt_class, pause_ms, level_step_db} ],
+arc:        { plane_path: [[pc1,pc2],...], total_span, max_step, labels },
+annotation: { voicenet_57, emonet_40, genuineness, blend, quality_4, vclap_emb,
+              speaker_emb, asr, procedural_caption, direction }</pre>
+<p>The point of recording <code>lead_trim_s</code>, every seam cosine and every level step is that
+when a human listening test eventually finds bad collages — and it will — the failures can be
+regressed against these fields to find out <em>which</em> rule was wrong. Without them the first
+listening test yields "some of these sound bad" and nothing actionable.</p>
+
+
+<h2>10b · Text per level — measured, and it does not work everywhere</h2>
+<p>A trajectory is a ladder: the same voice at rising levels of one dimension, spliced so the
+progression is audible in one listen. The obvious way to make a ladder legible is to write the
+condition into the <em>words</em> at each rung, scaled with the level. That was
+<b>ablated properly</b> — 106 arms &times; 16 candidates = 1,696 generations, one reference voice,
+zero failures — and the answer is that it works for some dimensions and actively harms others.</p>
+
+<div class="note"><b>Score a ladder on span and monotonicity, never on maximum.</b> A recipe that
+pushes all four rungs to "very high" has destroyed the dimension: you can no longer ask for a
+little of it. This is the metric the ablation used, with word error rate as a guard rail.</div>
+
+<table>
+<tr><th>dimension</th><th>write the condition into the text?</th><th>evidence</th></tr>
+<tr><td><b>Disfluency</b></td><td class="good">yes — the single biggest win</td>
+<td>span 0.444 → <b>2.084</b> (4.7&times;). The adapter alone tops out at 0.714, which is not a
+disfluent voice. Cost: WER 0.009 → 0.187.</td></tr>
+<tr><td><b>Chunking</b></td><td class="bad">no — the adapter alone is better</td>
+<td>every text arm worse (span 0.480 → 0.229–0.438) and WER roughly doubles for nothing.</td></tr>
+<tr><td><b>Explicitness</b></td><td class="good">yes — nothing happens without it</td>
+<td>the adapter alone is <b>flat</b>, span &minus;0.006 across all four rungs. With a vulgar-register
+ladder the top rung reaches 1.110 and WER <em>falls</em> to 0.079.</td></tr>
+<tr><td><b>Edge cases</b></td><td>intensity yes, at a cost</td>
+<td>inline burst tags + burst LoRA @0.5 + temp 1.4 raise emotion 2.498 → 2.683 and genuineness
+1.505 → 1.738, but blend falls 5.82 → 3.64 and WER nearly doubles.</td></tr>
+</table>
+
+<div class="note w"><b>Why chunking fails while disfluency succeeds — this predicts the rest.</b>
+Inserting ellipses makes the model <em>hesitate</em>, which is what the disfluency head measures. It
+does <b>not</b> make the model restructure the line into distinct breath groups, which is what the
+chunking head measures. Two dimensions that sound related respond to completely different
+interventions. <b>Do not assume a text trick transfers between dimensions that merely sound
+similar</b> — measure each one before adding it to the builder.</div>
+
+<p><b>Builder consequence.</b> The per-level text treatment is applied to the dimensions where it
+was measured to help, and withheld where it was measured to hurt. Predicted-but-unmeasured
+candidates — Intoxication, Grief and Hesitancy at the strongest setting, then Fatigue, Confusion,
+Embarrassment, Shame, Distress, Fear, Sadness, Helplessness, Awkwardness — are treated as
+<em>hypotheses</em>, not as settings, until each is ablated. Expect them to work where the condition
+produces hesitation and to fail where it produces restructuring.</p>
+
+<h2>10c · Splicing and voice conversion: convert the assembled clip, not the rungs</h2>
+<div class="note b"><b>A trajectory is spliced, so it inherits the seam problem of §5 — and
+per-part voice conversion does not solve it.</b> In a production run VC was applied to each part
+<em>before</em> splicing and the assembled clips still sounded fragmented. The cause is structural:
+each part is converted with no knowledge of its neighbours, so the converter cannot smooth a seam
+it never sees, and splicing independently-converted parts can even emphasise the joins.<br><br>
+Measured over 80 parts, per-part VC moved speaker similarity <b>+0.065</b> mean with <b>75 %</b> of
+parts improving — it was working — and the scene was still fragmented. Fixing identity per rung is
+not the same problem as producing one continuous performance.<br><br>
+<b>Rule:</b> assemble first, then convert the finished clip in one pass against the anchor. Keep
+both variants, because a single pass can also flatten prosodic changes that were <em>meant</em> to
+differ across a rung boundary — which in a trajectory is the whole point.</div>
+<p class="t">Also worth carrying into cost planning: DNSMOS improved in only <b>45 %</b> of
+converted parts. Voice conversion is a repair for identity, not an audio-quality upgrade. Sidon
+restoration is the separate tool for quality, measured at <b>20.7&times; realtime</b>, 48 kHz out.</p>
+
+<h2 id=cap>11 · Captions: one procedural caption, or an LLM-written direction?</h2>
+
+<p>Two options were specified. Both are worked below on the same real collage. The component clips
+are genuine takes from voice <code>emolia_c0039</code>, selected by
+<code>z(genuineness)+z(blend)</code> within their groups; the procedural captions are the actual
+<code>caption_gen</code> strings from the parquet, abbreviated only where marked.</p>
+
+<h3>Option A — one procedural caption for the whole collage</h3>
+<p>Re-run the existing procedural captioner on the finished 40-second file. It reads the newly
+computed VoiceNet buckets and emotion argmax of the <em>concatenation</em> and emits its template:</p>
+<pre>A The acoustic signature reflects a fully developed, The audio delivers a standard
+masculine vocal signature characterized voice; tempo: The speech has a brisk; arousal:
+The physiological activation is clearly elevated; warmth: The resonance perfectly
+strikes the standard human baseline; brightness: The spectral balance represents the
+perfect; reads as interest, impatience and irritability, concentration; style narrator
+style, casual style; genuineness 1.4/6, vocal-burst blend 3.1/10; 38.2s, EN.
+Spoken: "Are you serious with this? Your dough is clearly too dry ... Honestly,
+there's no fancy betting bonus for this candidates tournament, which is just
+insulting ... It just hurts to watch how some men carry this unending weight ...
+Seriously, the film with its deeply thought-provoking finish actually snagged a
+golden globe. I mean, can you believe it?"</pre>
+<p><b>What is wrong with it is visible in the third line.</b> "reads as interest, impatience and
+irritability, concentration" is the argmax over the whole 38 seconds — it describes the
+<em>average</em> emotion of a clip whose entire purpose is that the emotion is not constant. The
+arc has been averaged away. Every attribute in that caption is a scalar; a collage's defining
+property is a vector of change. Option A is cheap (CPU-only, effectively free) and completely
+faithful to the measurements, and it describes the wrong thing.</p>
+
+<h3>Option B — feed the component captions to a small LLM and ask for a direction</h3>
+<p>Prompt the model with the four component procedural captions <em>in order</em>, plus the arc
+metadata (labels, conditions, seam pauses), and ask for a single free-form direction of the kind a
+director gives an actor. Input for this example, abbreviated:</p>
+<pre>You are a voice director. Below are four takes, in the order they will be heard as one
+continuous 38-second performance by one actor. Write ONE short direction (2-4 sentences)
+describing how the delivery should MOVE across the whole thing. Describe the movement,
+not each clip. Do not invent emotions that are not listed. Do not mention clips, takes,
+seams, or editing.
+
+[1] Anger, full intensity. "reads as impatience and irritability, anger, concentration;
+    style narrator, storytelling; genuineness 0.3/6, blend 2.2/10; 7.2s"
+    Spoken: "Are you serious with this? Your dough is clearly too dry..."
+[2] Bitterness, contained. "reads as interest, impatience and irritability, concentration;
+    style conversational, casual; genuineness 2.1/6, blend 1.6/10; 7.4s"
+    Spoken: "Honestly, there's no fancy betting bonus for this candidates tournament..."
+[3] Sadness, moderate. "reads as interest, concentration, impatience; style narrator,
+    formal; genuineness 0.0/6, blend 1.5/10; 9.4s"
+    Spoken: "It just hurts to watch how some men carry this unending weight..."
+[4] Amusement, contained. "reads as interest, astonishment surprise, amusement; style
+    narrator, storytelling; genuineness 0.5/6, blend 2.1/10; 8.6s"
+    Spoken: "Seriously, the film ... actually snagged a golden globe..."
+
+Arc: Anger -> Bitterness -> Sadness -> Amusement. Plane span 3.31, max step 0.98.</pre>
+<p>A plausible output, of the form we would be training on:</p>
+<pre>Start hot and unguarded — the irritation is right on the surface, clipped and fast,
+each objection landing harder than the last. Let it cool without letting it go: by the
+second thought the anger has hardened into something drier and more resigned, the same
+complaint made with less heat and more contempt for the whole situation. Then let the
+floor drop out. The energy falls away and what is left underneath is plain hurt, spoken
+slowly and to nobody in particular. Come back up at the very end, but only halfway — a
+short, tired laugh at the absurdity of it, warmth without recovery.</pre>
+
+<h3>The comparison, honestly</h3>
+<table>
+<tr><th></th><th>A · procedural on the collage</th><th>B · LLM direction from components</th></tr>
+<tr><td>Describes the arc</td><td>No — averages it away</td><td>Yes, explicitly</td></tr>
+<tr><td>Faithful to measurement</td><td>Completely; every token traces to a number</td><td>Partly; the model interpolates prose between measured anchors</td></tr>
+<tr><td>Hallucination risk</td><td>Zero</td><td><b>Real and the main objection</b> — see below</td></tr>
+<tr><td>Cost</td><td>CPU only, free</td><td>~1,000 GPU-h per 100 M <span class="tag e">estimated</span></td></tr>
+<tr><td>Matches how the corpus is used</td><td>Weakly</td><td>Strongly — the vp500 corpus already trains on direction-style prompts (the <code>caption</code> field is exactly this register)</td></tr>
+<tr><td>Reproducible</td><td>Deterministic</td><td>Needs a pinned model, pinned prompt, temperature 0, and the version recorded per row</td></tr>
+</table>
+
+<div class=note class=w>
+<b class=h>The hallucination problem is not hypothetical, and section 6 makes it worse</b>
+The LLM is given the <em>intended</em> emotion labels and the component captions. It is not given the
+audio. If the arc is not audible — because the emotion adapters under-fired, because the
+per-clip emotion recovery is 18 %, or because the takes selected happen to be flat — the model will
+still write a fluent, confident direction describing a beautiful emotional descent that <b>is not in
+the audio</b>. Note that in the very example above, three of the four component captions independently
+report "reads as interest, concentration" — the measured read-out of clips that were <em>asked</em>
+for anger, bitterness and sadness. An LLM handed those captions plus the label "Anger → Bitterness →
+Sadness" will describe the labels, not the measurements, because the labels tell a better story.
+<br><br>
+That is a caption-generator that produces training targets uncorrelated with the audio, which is
+worse than no caption at all: it teaches a model that a specific direction corresponds to
+arbitrary delivery.
+</div>
+
+<h3>Recommendation: B, but constrained — and ship A alongside it</h3>
+<p><b>Generate both. Ship both. Make the direction structurally unable to invent the arc it is
+describing.</b></p>
+<ol>
+<li><b>Emit the procedural caption</b> (Option A) on the finished collage regardless. It costs
+nothing, it is the ground-truth attribute record, and it is what you check the direction against.</li>
+<li><b>Extend the procedural captioner to be arc-aware</b> before the LLM ever sees it: instead of
+one argmax over 38 seconds, run the emotion and VoiceNet heads over a sliding window and emit a
+<em>sequence</em> — "opens at high arousal / hostile; falls through the midpoint; ends low-arousal,
+warm". This is a small change (the heads are already per-window) and it fixes Option A's actual
+defect. Feed <em>these measured window statistics</em> to the LLM, not just the component labels.</li>
+<li><b>Constrain the LLM</b>: temperature 0, a pinned Gemma-class 2B/4B, 2–4 sentences, explicitly
+forbidden to name emotions that do not appear in the measured window sequence, and required to
+describe direction of change rather than absolute state.</li>
+<li><b>Add an automatic contradiction check</b>: parse the emotion words out of the generated
+direction, map them to the 40-emotion vocabulary, and verify that their plane positions are monotone
+in the same direction as the measured window sequence. Reject and regenerate on contradiction, and
+record the check result in the row. This turns "the LLM might hallucinate" from a hope into a
+measured rejection rate you can report.</li>
+<li><b>Record <code>direction_confidence</code></b> = the measured plane span of the collage. A
+collage whose measured span is small got a direction describing a movement that may not be there;
+consumers can filter on it.</li>
+</ol>
+<p>Why B rather than A as the headline field: the register matters. The whole vp500 corpus was
+<em>generated</em> from direction-style prompts — the existing <code>caption</code> column reads
+"(restrained and civil, the irritation tucked under the words, keeping control by effort, a small
+bite only on the final words)". A dataset whose target text is in the same register as the prompts
+that produced it is directly usable for instruction-following TTS. A dataset whose target text is
+"tempo: The speech has a brisk; arousal: ..." is usable for attribute prediction and little else.
+The reason to keep A anyway is that it costs nothing and it is the only thing that lets you audit B.</p>
+
+
+<h2 id=cost>12 · Cost</h2>
+
+<h3>12.1 Rates used</h3>
+<p>All GPU rates are <span class="tag m">measured</span> from the 44 per-worker measurement files of
+the completed <code>laion-tts-annotated-v1</code> production run (GPU busy 99.2 % of worker wall),
+except where marked. They are 1.3–3.2× better than the original smoke-test estimates, so the smoke
+figures are not used.</p>
+
+<table>
+<tr><th>Stage</th><th class=n>Per-clip rate (11 s clips)</th><th>Scaling to a 40 s collage</th><th class=n>Collages / GPU-h</th></tr>
+<tr><td>Scorer stack — VoiceNet 57, EmoNet 40, genuineness, blend, 4 quality heads, VoiceCLAP, BUD-E</td><td class=n>107,257 /GPU-h</td><td class=w>cost is <b>per item</b>, not per second: the two dominant stages pad to a 30 s window. A 40 s collage needs 2 windows → ×2.0</td><td class=n>53,628</td></tr>
+<tr><td>MOSS tokenisation</td><td class=n>205,484 /GPU-h</td><td class=w>compute-bound, scales with duration → ×3.67</td><td class=n>55,977</td></tr>
+<tr><td>Empathic Insight</td><td class=n>—</td><td class=w>rides inside the scorer stack</td><td class=n>—</td></tr>
+<tr><td>Procedural caption</td><td class=n>CPU</td><td class=w>free, does not occupy a GPU</td><td class=n>—</td></tr>
+<tr><td>LLM direction (Gemma-class 2B) <span class="tag e">estimated</span></td><td class=n>—</td><td class=w>~700 prompt + ~120 generated tokens; assumes ~6,000 output tok/s batched on one GH200. <b>Never measured here.</b></td><td class=n>100,000</td></tr>
+<tr><td>Build: mp3 decode + trim + join + encode</td><td class=n>CPU</td><td class=w>3.5 CPU-s per collage (encode 2.37 s at the measured 17× realtime per thread, decode 0.84 s, trim/loudness 0.40 s)</td><td class=n>—</td></tr>
+</table>
+
+<h3>12.2 Three scenarios</h3>
+<p>Mean collage 40.4 s (measured 9.30 s selected-clip mean × 4.5 clips × 0.965 net trim). Storage at
+the measured 5,850 B/s of the annotated corpus (46.8 kbps mono mp3) plus MOSS tokens
+(12 codebooks × 12.44 frames/s × 2 B) plus ~8 kB of JSON per row. GPU-h × 72 = core-h.</p>
+
+<table>
+<tr><th>Scenario</th><th class=n>Audio-hours</th><th class=n>Scorer GPU-h</th><th class=n>MOSS GPU-h</th><th class=n>LLM GPU-h</th><th class=n>Total GPU-h</th><th class=n>core-h</th><th class=n>CPU core-h</th><th class=n>Storage</th><th class=n>Wall on 64 nodes</th></tr>
+<tr><td><b>1 M collages</b></td><td class=n>11,216</td><td class=n>19</td><td class=n>18</td><td class=n>10</td><td class=n><b>47</b></td><td class=n>3,349</td><td class=n>1,004</td><td class=n>0.3 TB</td><td class=n>0.2 h</td></tr>
+<tr><td><b>10 M collages</b></td><td class=n>112,158</td><td class=n>186</td><td class=n>179</td><td class=n>100</td><td class=n><b>465</b></td><td class=n>33,490</td><td class=n>10,044</td><td class=n>2.6 TB</td><td class=n>1.8 h</td></tr>
+<tr><td><b>100 M collages</b></td><td class=n>1,121,580</td><td class=n>1,865</td><td class=n>1,786</td><td class=n>1,000</td><td class=n><b>4,651</b></td><td class=n>334,900</td><td class=n>100,441</td><td class=n>25.6 TB</td><td class=n>18.2 h</td></tr>
+</table>
+
+<table>
+<tr><th>Scenario</th><th class=n>Share of the ≈106 M core-h REFORMO remainder</th><th class=n>Clip reuse at top-5 gating</th></tr>
+<tr><td>1 M</td><td class=n>0.004 %</td><td class=n>2.1×</td></tr>
+<tr><td>10 M</td><td class=n>0.041 %</td><td class=n>21×</td></tr>
+<tr><td>100 M</td><td class=n>0.411 %</td><td class=n>214×</td></tr>
+</table>
+<p class=sub>Core-h shares include the CPU build cost. Wall-clock assumes 4 GPUs per node and perfect
+scaling; the real run will be I/O bound on shard reads long before it is GPU bound.</p>
+
+<div class=note class=g>
+<b class=h>Compute is not the constraint. At any of these scales.</b>
+Even 100 M collages costs 0.41 % of the remaining allocation and finishes in under a day on 64
+nodes. This is the single most important thing the costing tells us: <b>there is no budget reason to
+prefer a small dataset</b>, which means the choice of scale must be made on data-quality grounds —
+clip reuse, coverage, and how much unvalidated output you are willing to produce before anyone has
+listened to it. The 100 M scenario is affordable and, for exactly that reason, tempting; the reuse
+column is the argument against it.
+</div>
+
+<h3>12.3 The three quality gates, costed separately</h3>
+<table>
+<tr><th>Gate</th><th class=n>Pool</th><th class=n>Mean genuineness</th><th class=n>Mean blend</th><th class=n>Mean spk_sim</th><th class=n>Ceiling at reuse ≤ 4</th><th>Verdict</th></tr>
+<tr><td>top-1</td><td class=n>421,000</td><td class=n>2.008</td><td class=n>5.340</td><td class=n>0.385</td><td class=n>374,222</td><td class=w>Highest per-clip quality, but 12.6 % degenerate short takes without the duration floor, and the pool is too small to fill the coverage matrix at 20/cell without heavy reuse.</td></tr>
+<tr><td><b>top-3</b></td><td class=n>1,263,000</td><td class=n>1.792</td><td class=n>4.594</td><td class=n>0.394</td><td class=n>1,122,667</td><td class=w><b>Recommended.</b> Ceiling of 1.12 M collages at reuse ≤ 4 brackets the 960 k coverage minimum almost exactly. Quality cost vs top-1 is 11 % of mean genuineness.</td></tr>
+<tr><td>top-5</td><td class=n>2,105,000</td><td class=n>1.666</td><td class=n>4.148</td><td class=n>0.399</td><td class=n>1,871,111</td><td class=w>Use for the archetypes that are starved at top-3 (rare emotion pairs), not globally. Mean genuineness is 17 % below top-1.</td></tr>
+</table>
+<p class=sub>All figures with the 4-second duration floor applied first. Note that mean
+<code>spk_sim</code> <em>rises</em> from top-1 to top-5 — the highest-genuineness takes are the least
+speaker-consistent, which is the section-5 tension appearing inside the quality gate itself.</p>
+
+
+<h2 id=risk>13 · What could go wrong</h2>
+
+<div class=note class=b>
+<b class=h>Nothing in this pipeline has ever been validated against human ears</b>
+Not the genuineness scorer, not the vocal-burst classifier, not the emotion heads, not the speaker
+similarity floor, and certainly not the collage seams — which do not exist yet. This project has
+produced <b>five separate cases of a scorer confidently rewarding broken audio</b>, and section 10.1
+of this document is the sixth: ranking by genuineness + burst blend picks a 0.1-second clip
+containing the word "Yeah" as the best angry take available. Every number on this page is a machine
+agreeing with another machine.
+</div>
+
+<ul>
+<li><b>Seam artefacts.</b> The 15 ms micro-fade is a judgement, not a measurement. If it is too
+short there will be a click at every seam; if too long, a doubling. A model trained on 10 M collages
+each containing 3.5 clicks will learn to generate clicks. <b>Mitigation:</b> a spectral discontinuity
+detector on the finished audio (frame-to-frame log-spectral distance at the seam vs the clip
+interior) and a hard reject above threshold; plus a human listening test on 200 collages before any
+scale run. Nothing else catches this.</li>
+
+<li><b>The LLM hallucinating an arc that is not audible.</b> Discussed in section 11 — the specific
+risk is amplified by the 18 % per-clip emotion recovery, because the LLM is handed labels that the
+audio may not support. <b>Mitigation:</b> arc-aware measured window statistics in the prompt, the
+monotonicity contradiction check, and <code>direction_confidence</code> as a filterable field. Also:
+hold out 1,000 collages, have humans rate "does the direction match what you hear" on a 5-point
+scale, and publish the number. If it is below 3.5, ship Option A as the primary caption instead.</li>
+
+<li><b>Quality gates correlating with blandness.</b> Measured, not speculative: the correlation
+between <code>spk_sim</code> and genuineness is −0.09 and between <code>spk_sim</code> and burst
+blend is −0.14 (Pearson, n = 1.61 M). Small correlations, but they run the wrong way and they compound
+across a gate. Worse, sorting a group by <code>spk_sim</code> descending — which is what a naive
+"clean seams" rule does — returns takes whose emotion argmax is "interest, concentration" for
+<em>every</em> intended emotion, i.e. it reliably selects the take where the emotion adapter did the
+least. <b>Mitigation:</b> the seam rule in section 5.3 gates on clip-to-clip similarity with a burst
+exemption, never on emotional intensity; and the coverage audit is by intended label, so a
+systematically bland stratum shows up as a stratum that cannot be filled.</li>
+
+<li><b>The emotion is not actually in the audio.</b> Section 6: per-clip 40-way recovery is 18 %.
+The centroids are right, so the emotion adapters do something — but if for some voice or some
+emotion they do nothing, we will build arcs out of clips that all sound the same and label them as
+transitions. <b>Mitigation:</b> compute per-voice, per-emotion centroid separation before building,
+and exclude voice × emotion cells whose separation is below a threshold. This is cheap (parquet only)
+and it should be done in the pilot.</li>
+
+<li><b>Speaker identity drifting across a collage without any single seam failing.</b> Each seam can
+pass at 0.30 while clip 1 and clip 6 are 0.05 apart. <b>Mitigation:</b> a global constraint —
+every pair of non-adjacent clips must also exceed 0.15, and the mean of all pairwise cosines must
+exceed 0.25. Cheap to compute (6 clips = 15 pairs).</li>
+
+<li><b>The burst exemption becoming a loophole.</b> If 6 % of collages are burst-pivot and the
+exemption is generous, the exempt seams become the place where all the bad audio hides. The burst
+classifier is already known to be suspect — 77 of 151 detected spans came back as "Low Mumble".
+<b>Mitigation:</b> the blend ≥ 4.0 requirement, the exclusive-or rule, the 0.10 residual floor, and
+the fact that every exempt seam is flagged so the whole class can be dropped in one filter.</li>
+
+<li><b>The emotion head having an "Interest" prior rather than the corpora being flat.</b> Section 7.3:
+Interest plus Concentration account for 87–95 % of every natural corpus, <em>and</em> for 65 % of a
+synthetic corpus that is constructed to be one fortieth each of 40 emotions. Those two facts together
+mean the argmax is partly an artefact. If it is mostly artefact, every "emotional spread" number in
+section 7 is understated and the natural corpora are more usable than they look; if it is mostly
+real, the arcs in a natural-corpus v2 do not exist to be found. <b>Mitigation:</b> a targeted check —
+take the synthetic corpus, where the intended emotion is known exactly, and measure the head's
+calibration per emotion. That is a parquet-only job and it settles the question for all corpora at
+once. It should happen before any v2 scoping.</li>
+
+<li><b>Deriving speaker identity from a uid string.</b> Section 7.1 found that the obvious Emilia
+rule silently destroys 54 % of the corpus, that EuroParl's key is a parliamentary session rather than
+a person, and that the podcast's is a channel. Each of those would have produced a confidently wrong
+"speakers" number. <b>Mitigation:</b> the within-key VoiceNet variance test against a shuffled
+control, applied to every derived key before it is trusted. It costs seconds and it caught three
+errors here.</li>
+
+<li><b>Corpus totals.</b> This risk is now retired for the five ingested corpora: they were counted
+exactly rather than extrapolated (section 2), and the old ±20 % band turned out to contain but not
+centre the truth — Emilia was 23.5 % under. Kartoffelphon and the vp500 hours remain estimates.</li>
+
+<li><b>Over-building before validation.</b> The costing shows 100 M collages is affordable. That is
+the trap. Producing 100 M unvalidated items makes the eventual listening test more expensive to act
+on, not less, because a rule change means rebuilding everything.</li>
+</ul>
+
+
+<h2 id=rec>14 · Recommendation</h2>
+
+<div class=note class=g>
+<b class=h>Build 1 M collages, from the synthetic corpus only, at top-3 gating, with the arc-aware
+procedural caption <em>and</em> a constrained LLM direction — and run a human listening test on 200
+of them before building any of the other 999,800.</b>
+</div>
+
+<p><b>Scale: 1 M.</b> Not because of cost — 100 M costs 0.41 % of the remaining allocation — but
+because 1 M is where clip reuse stays at 2.1× and the coverage matrix (12 archetypes × 500 voices ×
+2 languages × 4 lengths × 20 collages = 960,000) is exactly filled. Every collage above that number
+is a rearrangement of audio already in the dataset. The 10 M scenario is a reasonable second phase
+<em>after</em> validation, if a downstream model demonstrably benefits from reuse; the 100 M scenario
+should not be built until someone can point at a model that needed it.</p>
+
+<p><b>Source: synthetic only, for v1.</b> The vp500 corpus is 20.1 M candidates across 500 voices
+with exact speaker identity, perfectly balanced emotion coverage (40 emotions × 4 settings × 2
+languages for every voice), and full annotation already on disk. Nothing else comes close for this
+purpose. The natural corpora are the v2 project: they offer ~645,000 qualifying releasable speakers
+(34,536 of them German) against the synthetic corpus's 500, which is exactly the axis vp500 is weak
+on — but EuroParl needs VoiceCLAP speaker clustering before it contributes anything at all, Common
+Voice needs its <code>cv_client_id</code> promoted into the index, the Emilia YODAS half needs a
+per-key voice-consistency filter, and all of them need the Interest-prior question answered first.
+Kartoffelphon is a German-TTS ingest worth doing on its own merits (~68 GPU-h), not a collage
+source.</p>
+
+<p><b>Gate: top-3 with a 4-second duration floor applied before ranking.</b> The floor is
+non-negotiable — without it 12.6 % of selections are degenerate.</p>
+
+<p><b>Seams: clip-to-clip ECAPA ≥ 0.30 or WavLM second opinion, with the class-specific burst
+exemption, every exemption flagged.</b> Not the 0.40 reference floor, which would discard 66 % of
+the angry material to protect against a cross-speaker error that cannot occur inside a
+single-voice collage.</p>
+
+<p><b>Captions: both.</b> Arc-aware procedural caption as the auditable ground truth; constrained
+LLM direction as the headline field, with the monotonicity check and a confidence score.</p>
+
+<h3>The first concrete step</h3>
+<p>One job, small enough to run today, that produces something a human can listen to:</p>
+<ol>
+<li><b>Build 200 collages</b> — 12 archetypes × ~17 each, spread over 40 voices, both languages,
+L ∈ {3,4,5,6}, from the existing vp500 parquet + tars. This is pure CPU on the login node or one
+small node: 200 × 3.5 CPU-s ≈ 12 CPU-minutes of work. No GPU, no allocation request.</li>
+<li><b>Re-annotate them</b> — 200 items through the scorer stack is under a minute of GPU time; it
+can ride on any existing job.</li>
+<li><b>Build a listening page</b> in the style of the existing Space pages: each collage playable,
+with its component boundaries marked, the seam cosines shown, the procedural caption and the LLM
+direction side by side, and three questions per item — <em>(a) does this sound like one person?
+(b) can you hear the emotion move? (c) does the written direction match what you hear?</em></li>
+<li><b>Have humans answer them.</b> Then, and only then, decide the thresholds. Every number in
+section 10 is a defensible guess derived from machine measurements; four of them (seam threshold,
+fade length, pause distribution, loudness window) are exactly the kind of parameter that a
+20-minute listening session settles better than another week of parquet analysis.</li>
+</ol>
+<p>The deliverable of step 1 is not a dataset. It is the first time anything in this pipeline has
+been checked against a human ear. Given that the pipeline has already produced six documented cases
+of a scorer rewarding broken audio, that is the highest-value hour available.</p>
+
+<hr style="border:0;border-top:1px solid var(--line);margin:44px 0 20px">
+<p class=sub>Everything on this page is reproducible from data that is on disk; the analysis scripts
+themselves were written to session scratch and are not durable, but each measurement states its
+source and method so it can be re-run. <br>
+Sources: <code>$NB/vprof/vp500/*/PPILOT2/*.parquet</code> (40-voice and 8-voice random samples for
+the synthetic statistics, 400 decoded clips from <code>anime_000/PPILOT2/cands-000.tar</code> for
+the silence and loudness measurements),
+<code>$NB/tokcorpus/meas/*.json</code>, <code>$NB/tokcorpus/WORKLOG.md</code>,
+<code>/e/data1/datasets/products/TTS Training Data/laion-tts-annotated-v1/{index,WORKLOG.md}</code>,
+and the Hugging Face API for Kartoffelphon.</p>
+
+</div>
