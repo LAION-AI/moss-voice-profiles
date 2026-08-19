@@ -1,0 +1,28 @@
+{
+ "params": {
+  "frame_ms": 20,
+  "rel_db": 35.0,
+  "floor_db": -60.0,
+  "pad_ms": 30,
+  "max_internal_ms": 400.0,
+  "target_gap_ms": 150.0,
+  "xfade_ms": 40.0,
+  "sr": 48000
+ },
+ "n_collages": 20,
+ "n_clips": 96,
+ "n_clips_with_long_internal_silence": 43,
+ "n_collages_affected": 19,
+ "n_stretches_collapsed": 56,
+ "stretch_len_s": {
+  "min": 0.42,
+  "p25": 0.46,
+  "median": 0.5,
+  "p75": 0.64,
+  "max": 1.24
+ },
+ "total_removed_s": 23.62,
+ "total_clip_s_before": 821.7,
+ "total_clip_s_after": 798.1,
+ "long_stretches_surviving_fix": 0
+}

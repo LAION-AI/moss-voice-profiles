@@ -1,0 +1,132 @@
+{
+  "n_candidate_rows": 136000,
+  "reward_group_recomputed": true,
+  "n_sources": 34000,
+  "ab": {
+    "arms": [
+      {
+        "arm": "SIDON-then-rank (shipped)",
+        "n": 33692,
+        "emo_target": 0.7671369464561321,
+        "overall_q": 3.1196365606078595,
+        "ecapa": 0.6407966769281632,
+        "wavlm": 0.8235737093062058,
+        "blend": 2.388388964739404,
+        "genuineness": 0.7842487534132732
+      },
+      {
+        "arm": "rank-then-SIDON (pilot order)",
+        "n": 33692,
+        "emo_target": 0.7395887747833313,
+        "overall_q": 3.1106638371126674,
+        "ecapa": 0.6409521915278147,
+        "wavlm": 0.8236635162454553,
+        "blend": 2.3866774605247536,
+        "genuineness": 0.78612011753532
+      },
+      {
+        "arm": "arbitrary pick (k=1)",
+        "n": 33692,
+        "emo_target": 0.7036159325655942,
+        "overall_q": 3.1025609640270693,
+        "ecapa": 0.6408996202502789,
+        "wavlm": 0.8233631603349653,
+        "blend": 2.3819464264513828,
+        "genuineness": 0.7843917843998575
+      }
+    ],
+    "winner_agreement": 0.47302030155526537,
+    "sidon_effect_fixed_candidate": {
+      "n": 134768,
+      "d_overall_q": -0.03926835747358424,
+      "d_emo_target": -0.011546665380505758,
+      "d_ecapa": -0.014549040527536423,
+      "d_wavlm": -0.00902341734878615,
+      "d_blend": 0.26974747714591,
+      "d_genuineness": 0.0895504274011635
+    },
+    "delta_shipped": {
+      "emo_target": 0.02754817167280077,
+      "overall_q": 0.00897272349519218,
+      "ecapa": -0.00015551459965146286
+    }
+  },
+  "recovery": [
+    {
+      "target_kind": "emo",
+      "n_sources": 14036,
+      "src_mean": 1.0339843972641778,
+      "arbitrary_pick": 0.8774954402963807,
+      "oracle_best_of_4": 0.9534185665431748,
+      "reward_group": 0.9379951553149046,
+      "reward_group_rel_to_src": -0.09283432342233729,
+      "reward_group_gap_recovered": 0.3866069286344198,
+      "reward_group_of_oracle": 0.7968548979643545,
+      "reward_set": 0.9284868196067255,
+      "reward_set_rel_to_src": -0.1020301446874717,
+      "reward_set_gap_recovered": 0.3258465025160722,
+      "reward_set_of_oracle": 0.6716185414256167,
+      "reward_minmax": 0.9291892989455685,
+      "reward_minmax_rel_to_src": -0.10135075403060914,
+      "reward_minmax_gap_recovered": 0.3303355051425482,
+      "reward_minmax_of_oracle": 0.680871049502793,
+      "arbitrary_rel_to_src": -0.15134556902584956,
+      "quality_arbitrary": 3.0937061128526646,
+      "quality_reward": 3.1128381305215163,
+      "ecapa_arbitrary": 0.6374719661024372,
+      "ecapa_reward": 0.6374922349852815
+    },
+    {
+      "target_kind": "dim",
+      "n_sources": 15280,
+      "src_mean": 0.24130111256544504,
+      "arbitrary_pick": 0.14847192408376964,
+      "oracle_best_of_4": 0.2705714005235602,
+      "reward_group": 0.24500235602094242,
+      "reward_group_rel_to_src": 0.015338692043923094,
+      "reward_group_gap_recovered": 1.0398715481201046,
+      "reward_group_of_oracle": 0.7905884181638867,
+      "reward_set": 0.2290430628272251,
+      "reward_set_rel_to_src": -0.05079980613390387,
+      "reward_set_gap_recovered": 0.8679504804607908,
+      "reward_set_of_oracle": 0.6598811157326013,
+      "reward_minmax": 0.2292687172774869,
+      "reward_minmax_rel_to_src": -0.04986464902723868,
+      "reward_minmax_gap_recovered": 0.870381337112159,
+      "reward_minmax_of_oracle": 0.6617292354530251,
+      "arbitrary_rel_to_src": -0.38470269570969556,
+      "quality_arbitrary": 3.104490772251309,
+      "quality_reward": 3.121926505235602,
+      "ecapa_arbitrary": 0.6450898604375476,
+      "ecapa_reward": 0.6449268178766256
+    }
+  ],
+  "throughput": {
+    "n_shards": 17,
+    "n_samples": 34000,
+    "s_per_sample_mean": 0.88084129615391,
+    "s_per_sample_p50": 0.8882970703840256,
+    "s_per_sample_min": 0.7322565809488296,
+    "s_per_sample_max": 1.0331935445070266,
+    "sidon_ms_per_clip": 51.38190235811121,
+    "stage_share": {
+      "decode": 0.0744,
+      "generate": 0.5395,
+      "io": 0.0039,
+      "mp3": 0.0075,
+      "presidon_score": 0.1016,
+      "score": 0.0713,
+      "sidon": 0.2333,
+      "spk": 0.027,
+      "tokenize": 0.0104
+    },
+    "projected_gpu_h_full_run": 4924.327606747614,
+    "plan_gpu_h": 3588.0,
+    "ratio_to_plan": 1.3724435916241955,
+    "projected_core_h": 354551.58768582816,
+    "projected_h_on_48_nodes": 25.647539618477154,
+    "realtime_x": 11.269163830141531,
+    "bytes_per_shard": 1593644574.1176472,
+    "projected_out_TB": 3.1872891482352945
+  }
+}

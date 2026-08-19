@@ -45,6 +45,19 @@ A single clip sits 6.12 units from its own condition's centre while two differen
 5.00 apart, so per-clip emotion is noise-dominated and the map only exists in the aggregate.
 100 assembled listening examples, half at each threshold, including six pairs built in both
 directions. <b>None of it validated by ear</b> &mdash; that is what the audio is for.</span></a>
+<a class=c href="vc/README.md"><b>Voice conversion &mdash; consolidated write-up and code &rarr;</b>
+<span>One document covering all of the voice-conversion work: what it is for, the <b>two competing
+ways</b> it is applied to assembled multi-clip audio, and which to use. Per-clip conversion to the
+voice's own reference is the only arm that improves speaker similarity against that reference
+(+0.153 ECAPA, 20/20 collages) and it keeps the designed pauses silent; a single pass over the
+finished soundscape wins on quality (+0.048 Overall-Q, 19/20) and on consistency with what the
+listener hears first (+0.121 ECAPA, 20/20) but fills those pauses to 49&nbsp;dB below the speech.
+Neither wins outright. The seam hypothesis that motivated the whole-file pass is <b>not</b>
+confirmed: both arms cut seam excess by the same amount (difference t&nbsp;=&nbsp;&minus;0.04).
+Includes the code for both variants, the measured tables, and the known defects &mdash; among them
+the internal-silence bug in the trajectory-collage audio, whose mp3s are kept deliberately as a
+diagnostic. Renders best <a href="https://github.com/LAION-AI/moss-voice-profiles/tree/main/vc">on
+GitHub</a>.</span></a>
 <a class=c href="vc_scenario1.html"><b>Scenario 1 in production: best-of-4 with SIDON &rarr;</b>
 <span>The pilot, run for real over all 20,125,736 takes and 500 voices. Four conversions each,
 SIDON on all four, then ranked on the restored audio by

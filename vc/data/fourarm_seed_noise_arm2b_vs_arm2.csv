@@ -1,0 +1,17 @@
+metric,seed_noise_mean,seed_noise_sd,t
+ecapa_ref,0.0039,0.0075,2.32
+ecapa_first,0.0006,0.007,0.38
+wavlm_ref,-0.0035,0.0189,-0.84
+wavlm_first,0.0025,0.0189,0.6
+emo_z,-0.0151,0.1813,-0.37
+emo_raw,-0.0009,0.0775,-0.05
+qual,0.0012,0.0096,0.57
+speech_q,0.0014,0.0119,0.52
+genuineness,-0.0285,0.0755,-1.68
+spk_spread,0.0015,0.0072,0.92
+seam_jump,0.0631,0.1582,1.79
+interior_jump,0.0259,0.1166,0.99
+seam_excess,0.0373,0.1703,0.98
+dur_s,0.0,0.0,
+gap_db,0.9635,4.7957,0.9
+gap_below_seg_db,-1.041,4.7603,-0.98

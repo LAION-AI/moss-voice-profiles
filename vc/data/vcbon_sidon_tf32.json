@@ -1,0 +1,29 @@
+{
+  "shard": "anime_000/001",
+  "n_clips": 192,
+  "mean_clip_s": 8.674583333333333,
+  "batch": 32,
+  "tf32_off": {
+    "wall_s": 10.684447288513184,
+    "ms_per_clip": 55.648162961006165,
+    "ms_per_clip_at_972s": 62.354596549034625,
+    "realtime_x": 155.88265401342716
+  },
+  "tf32_on": {
+    "wall_s": 7.683669567108154,
+    "ms_per_clip": 40.0191123286883,
+    "ms_per_clip_at_972s": 44.84201221978197,
+    "realtime_x": 216.76101314008483
+  },
+  "speedup_tf32_on": 1.39053966274794,
+  "snr_off_vs_on_db": {
+    "mean": 40.70897411972218,
+    "median": 40.97506737733134,
+    "p05": 34.146922505896754,
+    "p95": 46.57024570376155,
+    "min": 30.434276137677486,
+    "max": 55.923592813229384
+  },
+  "pilot_claim_ms_per_clip": 38.3,
+  "note": "ms_per_clip_at_972s rescales to the cost model's assumed mean clip so the comparison against 38.3 ms is like-for-like on duration."
+}
