@@ -1,0 +1,487 @@
+<!doctype html><meta charset=utf-8><title>laion-tts-annotated-v1 &mdash; what was built, what it contains, and what is still missing</title><style>
+:root{--bg:#0e1117;--fg:#e6edf3;--mut:#9aa7b4;--line:#26303b;--card:#161c24;--ok:#3fb950;--warn:#d29922;--bad:#f85149}
+*{box-sizing:border-box}
+body{font-family:system-ui,Segoe UI,Arial;background:var(--bg);color:var(--fg);margin:0 auto;
+padding:32px 22px;max-width:1180px;line-height:1.62}
+h1{font-size:1.9em;margin:0 0 .1em;line-height:1.2}
+h2{margin:2.2em 0 .5em;padding-top:.7em;border-top:1px solid var(--line);font-size:1.32em}
+h3{margin:1.5em 0 .4em;font-size:1.06em;color:#cbd5e1}
+.sub{color:var(--mut);margin:0 0 1.6em}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:.9em}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:#1b2530;font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+code{background:#1b2530;padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:#11161d;border:1px solid var(--line);padding:12px;border-radius:7px;overflow-x:auto;font-size:.85em}
+.scroll{overflow-x:auto}
+a{color:#58a6ff}
+.win{color:var(--ok);font-weight:600}
+.neg{color:var(--bad);font-weight:600}
+.wrn{color:var(--warn);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:14px 18px;margin:1.1em 0}
+.big{font-size:1.5em;font-weight:700}
+ul{padding-left:1.15em}
+.y{color:var(--ok);font-weight:700}.n0{color:#4a5563}
+small{color:var(--mut)}
+dl.g{margin:.6em 0}
+dl.g dt{font-weight:600;color:#cbd5e1;margin-top:.6em}
+dl.g dd{margin:.1em 0 0 1.2em;color:var(--mut)}
+.bar{display:inline-block;height:10px;background:var(--ok);border-radius:2px;vertical-align:middle}
+.bar.w{background:var(--warn)}.bar.b{background:var(--bad)}
+</style>
+
+<h1>laion-tts-annotated-v1: what was built, what is inside it, and what is still missing</h1>
+<p class=sub>JUPITER (GH200, 4 GPUs/node) &middot; 2026-08-19 05:45 &middot; corpus at
+<code>/e/data1/datasets/products/TTS&nbsp;Training&nbsp;Data/laion-tts-annotated-v1</code><br>
+Every number here was produced by a script in <code>$NB/tokcorpus/code/</code> reading the corpus
+on disk, and the script is named next to the number.</p>
+
+<div class=card>
+<p><b>What this is.</b> A training corpus for <b>text-to-speech (TTS)</b> &mdash; systems that turn
+written text into spoken audio. Modern TTS models learn much better when each recording comes with
+rich labels: not just <i>what</i> was said, but who-ish said it, how they sounded, what emotion was
+in the voice, and where the non-word noises (laughs, sighs) fall. This corpus is
+<span class=big>130,795,431</span> utterances / <span class=big>371,908</span> audio-hours across
+<b>8 datasets and 16,438 shards</b>, each utterance carrying <b>180 annotation columns</b>.</p>
+<p><b>Headline: the annotation stack is complete.</b> Sampling 400,192 rows spread across all 8
+datasets, <b>captions, vocal bursts, all 40 emotion scores, all 57 voice dimensions (regression +
+bucket), the 4 quality heads, genuineness, blend, and MOSS tokens are at 100.00 % on every
+dataset.</b> There is no missing-annotation backlog.</p>
+<p><b>Three things were actually wrong, and are now fixed:</b></p>
+<ul>
+<li>A <b>single malformed source file could kill a whole worker</b> and forfeit every shard behind
+it. That &mdash; not walltime &mdash; is what stalled EuroSpeech at 2,500/2,771.</li>
+<li><b>evasnippets' language column was empty for all 500,007 rows</b> because of a one-word config
+error. Backfilled to 97.68 % without re-running a single GPU stage.</li>
+<li>A dataset that had <b>never run could never be started automatically</b> &mdash; the scheduler
+sized it at &ldquo;0 hours of work left&rdquo;. KartoffelPhon would have sat at zero forever.</li>
+</ul>
+</div>
+
+<h2>0. Vocabulary (skip if you know it)</h2>
+<dl class=g>
+<dt>Utterance</dt><dd>One short recording of speech &mdash; typically 5&ndash;15 seconds &mdash;
+plus its transcript and labels. The atomic unit of this corpus.</dd>
+<dt>Shard</dt><dd>A bundle of a few thousand utterances stored in one file. Filesystems on
+supercomputers collapse under millions of small files, so everything is packed into
+<code>.tar</code> archives (shards) with a matching <code>.parquet</code> table.</dd>
+<dt>Parquet</dt><dd>A column-oriented table file. Reading only the <code>lang</code> column of a
+million rows touches only that column's bytes, which is why the audits below are cheap.</dd>
+<dt>WebDataset</dt><dd>The convention of storing each utterance as several members of a tar sharing
+a filename stem: <code>abc123.wav</code>, <code>abc123.json</code>, <code>abc123.moss.npy</code>.</dd>
+<dt>Forced alignment</dt><dd>Given audio <i>and</i> its transcript, computing the time at which each
+word is spoken. Not transcription &mdash; the words are already known; only the timing is inferred.</dd>
+<dt>Vocal burst</dt><dd>A non-word vocal sound: laugh, sigh, gasp, "ahem". These carry a lot of the
+emotional signal in speech and are usually thrown away by transcript-only pipelines.</dd>
+<dt>Tokenizer (MOSS)</dt><dd>A model that converts a waveform into a short sequence of integer
+codes, so a language model can predict speech the way it predicts text.</dd>
+<dt>Embedding</dt><dd>A fixed-length vector (here 250 numbers) summarising a recording. Two
+recordings of the same person land close together; the closeness measure is <b>cosine
+similarity</b>, which runs from &minus;1 (opposite) through 0 (unrelated) to 1 (identical).</dd>
+<dt>Slurm / GPU-hour</dt><dd>Slurm is the cluster's job queue. One GPU-hour is one GPU busy for one
+hour. On this machine a whole node is billed whenever any part of it is used, so jobs always
+request all 4 GPUs.</dd>
+</dl>
+
+<h2>1. What is in the corpus</h2>
+<p>Row counts are exact (read from every parquet file's footer by
+<code>meas/corpus_totals.json</code>); mean duration is from a 40-shard-per-dataset sample of the
+<code>dur_s</code> column, so audio-hours carry roughly that sampling error.</p>
+<div class=scroll><table>
+<tr><th>dataset</th><th class=n>shards</th><th class=n>utterances</th><th class=n>mean s</th><th class=n>audio-hours</th><th>what it is</th></tr>
+<tr><td>emolia</td><td class=n>4,163</td><td class=n>81,824,581</td><td class=n>9.26</td><td class=n>210,471</td><td>multilingual expressive speech; the bulk of the corpus</td></tr>
+<tr><td>podcast</td><td class=n>6,496</td><td class=n>26,606,892</td><td class=n>13.17</td><td class=n>97,337</td><td>podcast speech, shipped as latents only &rarr; needed audio decoding</td></tr>
+<tr><td>eurospeech</td><td class=n>2,763</td><td class=n>9,119,466</td><td class=n>14.96</td><td class=n>37,896</td><td>European parliamentary speech, 16 languages, human transcripts</td></tr>
+<tr><td>commonvoice</td><td class=n>935</td><td class=n>7,062,615</td><td class=n>5.02</td><td class=n>9,848</td><td>crowd-read sentences, 117 languages, human transcripts</td></tr>
+<tr><td><b>kartoffelphon</b></td><td class=n>218</td><td class=n>2,616,656</td><td class=n>10.06</td><td class=n>7,312</td><td><b>added in this session</b>; German+English podcasts, Arrow format</td></tr>
+<tr><td>snippets</td><td class=n>1,410</td><td class=n>2,633,037</td><td class=n>6.82</td><td class=n>4,988</td><td>enhanced audio snippets, latents only</td></tr>
+<tr><td>evasnippets</td><td class=n>328</td><td class=n>500,007</td><td class=n>16.24</td><td class=n>2,256</td><td>emotion/voice-attribute reference snippets</td></tr>
+<tr><td>mls</td><td class=n>125</td><td class=n>432,177</td><td class=n>14.99</td><td class=n>1,800</td><td>multilingual audiobooks, 7 languages</td></tr>
+<tr><th>TOTAL</th><th class=n>16,438</th><th class=n>130,795,431</th><th class=n></th><th class=n>371,908</th><th></th></tr>
+</table></div>
+<p>For scale: 371,908 audio-hours is about <b>42 years of continuous speech</b>. The original
+survey projected 119.8 M utterances and 335,000 hours; the realised corpus is 9 % and 11 % above
+that, which is a good outcome for an estimate built from 2.3 % of the bytes.</p>
+
+<h2>2. The pipeline &mdash; which script produced which annotation</h2>
+<p>One process per GPU, four per node, launched 150 s apart (four simultaneous cold model loads off
+the shared filesystem wedge every worker into uninterruptible sleep &mdash; a lesson that cost real
+time). Each source shard flows: <b>read &rarr; decode/load audio &rarr; resample &rarr; scorer &rarr;
+bursts &rarr; MOSS &rarr; alignment &rarr; caption &rarr; one output tar + one parquet</b>. A
+<code>.done</code> marker per shard makes the whole thing resumable and idempotent.</p>
+<div class=scroll><table>
+<tr><th>annotation columns</th><th class=n>#</th><th>stage</th><th>produced by</th><th>model</th></tr>
+<tr><td><code>emo_*</code> emotion intensities</td><td class=n>40</td><td>scorer</td><td><code>prod.py</code> <code>Models.scorer</code> &rarr; <code>pp_scores_fast.py</code></td><td>Empathic-Insight-plus, 40 heads</td></tr>
+<tr><td><code>vn_*_reg</code> voice dimensions</td><td class=n>57</td><td>scorer</td><td>same forward pass</td><td>VoiceNet, 57 ordinal heads</td></tr>
+<tr><td><code>vn_*_bucket</code> ordinal buckets</td><td class=n>57</td><td>scorer</td><td>same forward pass</td><td>VoiceNet (bucketised)</td></tr>
+<tr><td><code>qual_*</code> quality</td><td class=n>4</td><td>scorer</td><td>same forward pass</td><td>quality 4-head</td></tr>
+<tr><td><code>genuineness_0_6</code>, <code>blend_0_10</code></td><td class=n>2</td><td>scorer</td><td>rides the shared embedding &mdash; effectively free</td><td>genuineness / burst-blend heads</td></tr>
+<tr><td><code>n_bursts</code>, <code>burst_labels</code>, <code>burst_placement</code>, <code>text_with_bursts</code></td><td class=n>4</td><td>burst</td><td><code>prod.py</code> <code>Models.burst</code></td><td>Whisper-small locator + detector-v2 (83 classes)</td></tr>
+<tr><td><code>moss_frames</code>, <code>moss_n_vq</code></td><td class=n>2</td><td>moss</td><td><code>prod.py</code> <code>Models.moss</code>, length-bucketed batches</td><td>MOSS-Audio-Tokenizer-v2 (2.12 B)</td></tr>
+<tr><td><code>align_status</code>, <code>words</code></td><td class=n>2</td><td>align</td><td><code>prod.py</code> <code>Models.align</code></td><td>torchaudio MMS_FA forced aligner</td></tr>
+<tr><td><code>caption_general</code>, <code>caption_script</code></td><td class=n>2</td><td>caption</td><td><code>caption2.py</code> <code>procedural_caption()</code></td><td>none &mdash; rule-based from the scorer outputs</td></tr>
+<tr><td>audio itself (latent-only sets)</td><td class=n>&mdash;</td><td>decode</td><td><code>dacvae_decode.py</code> + <code>dacvae_load.py</code></td><td>DAC-VAE (48 kHz, 25 latent fps)</td></tr>
+<tr><td><code>lang</code>, <code>dur_s</code>, <code>text</code>, <code>uid</code></td><td class=n>4</td><td>&mdash;</td><td>copied from source metadata by <code>prod.py</code></td><td>none</td></tr>
+</table></div>
+<p><b>No speech recognition is run anywhere.</b> Every audio-bearing dataset in scope already ships
+a transcript, so the ASR budget is zero &mdash; a large saving that the original plan identified and
+this build honoured.</p>
+<p><b>Captions are rule-based, not generated.</b> <code>caption2.py</code> maps each VoiceNet head's
+(dimension, bucket, level-count) to a curated tag and assembles a sentence. Its predecessor sliced
+the first nine words off a multi-sentence training anchor and produced text like <i>&ldquo;A The
+acoustic signature reflects a fully developed, The audio delivers a standard masculine&hellip;&rdquo;</i>
+Worth knowing when judging caption quality: these are deterministic descriptions, not model prose.</p>
+
+<h2>3. The completeness audit &mdash; did every dataset really get the full treatment?</h2>
+<p>A <code>.done</code> marker only proves a shard was <i>processed</i>. It says nothing about
+whether the columns inside are populated. <code>auditfull.py</code> therefore opens the parquet
+tables directly and counts, per dataset, the fraction of rows carrying each annotation. Eight
+parquet files per dataset, <b>spread evenly across the shard-id range</b> rather than taken from the
+front &mdash; shard id correlates with source file and therefore with language, so a head sample
+would be biased. <b>400,192 rows sampled.</b></p>
+<div class=scroll><table>
+<tr><th>dataset</th><th class=n>rows</th><th class=n>caption</th><th class=n>bursts</th><th class=n>40 emo</th><th class=n>57 vn_reg</th><th class=n>57 vn_bucket</th><th class=n>4 qual</th><th class=n>genuine</th><th class=n>MOSS</th><th class=n>dur_s</th><th class=n>align OK</th><th class=n>lang</th></tr>
+<tr><td>podcast</td><td class=n>32,044</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class=n>98.55</td><td class="n win">100</td></tr>
+<tr><td>commonvoice</td><td class=n>63,263</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n wrn">64.70</td><td class="n win">100</td></tr>
+<tr><td>eurospeech</td><td class=n>26,403</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n wrn">74.03</td><td class="n win">100</td></tr>
+<tr><td>mls</td><td class=n>27,376</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td></tr>
+<tr><td>snippets</td><td class=n>14,214</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class=n>99.44</td><td class="n neg">0</td></tr>
+<tr><td>evasnippets</td><td class=n>13,190</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n neg">3.90</td><td class="n win">96.09</td></tr>
+<tr><td>kartoffelphon</td><td class=n>95,955</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">99.94</td><td class="n win">100</td></tr>
+<tr><td>emolia</td><td class=n>127,747</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td class="n win">100</td><td>n/a</td><td class="n win">100</td></tr>
+</table></div>
+<p class=win style="font-size:1.05em">Nine of the eleven annotation families in this table are at
+exactly 100.00 % on all eight datasets &mdash; as is <code>blend_0_10</code>, omitted above only to
+keep the table readable. Nothing needs to be re-run for any of them.</p>
+<p>Only <b>alignment</b> and <b>language</b> fall short, and the rest of this section shows that
+neither is a pipeline failure.</p>
+
+<h3>The two columns that are not 100 %, and why neither is a pipeline failure</h3>
+<p><b>Alignment.</b> Every shortfall is explained by the <code>align_status</code> column itself,
+which records <i>why</i> a row was not aligned:</p>
+<div class=scroll><table>
+<tr><th>dataset</th><th>align_status breakdown (sampled rows)</th><th>verdict</th></tr>
+<tr><td>emolia</td><td><code>off</code>: 127,747 (100 %)</td><td>aligner deliberately not in emolia's stage list. <b>Correct behaviour</b>, not a gap.</td></tr>
+<tr><td>commonvoice</td><td><code>ok</code> 40,931 &middot; <code>nonlatin</code> 22,332</td><td rowspan=3>The aligner's token set is romanised and the <code>uroman</code> romaniser is not installed in any environment here. Non-Latin scripts cannot be aligned. <b>Known upstream blocker</b>, recorded on 08-13.</td></tr>
+<tr><td>eurospeech</td><td><code>ok</code> 19,547 &middot; <code>nonlatin</code> 6,856</td></tr>
+<tr><td>podcast / snippets</td><td><code>nonlatin</code> 465 / 78</td></tr>
+<tr><td>evasnippets</td><td><code>notext</code> 12,674 &middot; <code>ok</code> 515</td><td>96 % of rows <b>have no transcript in the source</b> &mdash; see below. You cannot align words you do not have.</td></tr>
+<tr><td>kartoffelphon</td><td><code>ok</code> 95,901 &middot; 26 CTC-length &middot; 28 <code>nonlatin</code></td><td>99.94 % aligned.</td></tr>
+</table></div>
+<p><b>evasnippets' missing transcripts are upstream, and I checked rather than assumed.</b> Four
+shards were opened in both the source archive and the output table:</p>
+<pre>shard 00000  Affection_0to1.tar               src_rows=100   out_rows=100   src_text=100   out_text=100
+shard 00109  Distress_2to3.tar                src_rows=824   out_rows=824   src_text=100   out_text=100
+shard 00218  Recording_Quality_2to3.tar       src_rows=100   out_rows=100   src_text=100   out_text=100
+shard 00327  talking_speed_7.86_to_10.71.tar  src_rows=5729  out_rows=5729  src_text=0     out_text=0</pre>
+<p>Row counts and transcript counts match <b>exactly</b>. The pipeline copied everything that
+existed; the large <code>talking_speed_*</code> shards simply ship no transcript field. Nothing to
+fix.</p>
+
+<h3>The one real gap: evasnippets' language column &mdash; found, fixed, backfilled</h3>
+<p>The audit showed <code>lang</code> at <b>0.00 %</b> for evasnippets while every other column sat
+at 100 %. That shape &mdash; one column empty, everything around it perfect &mdash; is the signature
+of a config error, not a failed model. It was:</p>
+<pre>prodreg.py:  "evasnippets": dict(..., lang=None, ...)
+prod.py:519  lang = str(meta.get(cfg["lang"]) or "").lower() <b>if cfg.get("lang") else ""</b></pre>
+<p>With <code>lang=None</code> the column is unconditionally the empty string, for all 500,007 rows.
+The source <i>does</i> carry a <code>language</code> field on the bulk of the set (5,725 of 5,729
+rows in the largest shard, 24 languages).</p>
+<p><b>The language was never actually lost from the corpus</b> &mdash; <code>prod.py</code> copies
+the entire source metadata into each output tar's JSON as <code>src_meta</code>, and
+<code>src_meta.language</code> was intact there. So the repair was a metadata lift, not a
+reprocessing job: <b>no GPU, no re-download, no re-running the scorer/burst/MOSS/align stack</b>.
+<code>langfix.py</code> reads it out of the tars and rewrites each parquet to a temporary file
+which is then atomically renamed &mdash; a second agent reads this directory concurrently and must
+never see a half-written table.</p>
+<div class=card><p><b>Result (job 1409348, 32 shard-parallel processes, one node):</b> the full
+500,007 rows visited, <span class=big>481,415</span> language values filled =
+<span class=win>96.3 %</span>. Independent re-audit of 12 shards confirms the column on disk went
+<code>0.00 % &rarr; 97.68 %</code>. The residual ~3.7 % are the small hand-built
+<code>*_0to1.tar</code> shards whose source genuinely has no language field.</p></div>
+
+<h3>What is still missing, stated plainly</h3>
+<p><b>snippets' <code>lang</code> is 0 % and no work was queued for it.</b> Its source JSON has no
+language-ish key at all &mdash; 1,600 records sampled across 8 shards, zero hits. Filling it would
+require running a spoken-language-identification model, which is a <b>new pipeline stage, not a
+backfill</b>. That is a decision for whoever owns the corpus, not something to invent here. The
+same is true of the <code>nonlatin</code> alignment gap: it needs <code>uroman</code> installed,
+which is an environment change.</p>
+
+<h2>4. EuroSpeech: the stall was a bug, not a backlog</h2>
+<p>The brief said &ldquo;271 shards remain and the keeper is draining them.&rdquo; It was not
+draining. At 23:58 there were zero production jobs queued, the newest <code>.done</code> was two
+hours old, and the three-generation job chain submitted at 19:57 had ended like this:</p>
+<div class=scroll><table>
+<tr><th>job</th><th>generation</th><th>outcome</th></tr>
+<tr><td>1407223</td><td>g0, 8 nodes</td><td>5 of 8 tasks <span class=neg>FAILED</span>, 3 hit the 2 h wall</td></tr>
+<tr><td>1407224</td><td>g1, 4 nodes</td><td><span class=neg>all 4 FAILED after ~8 min 47 s</span></td></tr>
+<tr><td>1407225</td><td>g2, 2 nodes</td><td><span class=neg>all 2 FAILED after ~8 min 48 s</span></td></tr>
+</table></div>
+<p>A mop-up generation that burns out in nine minutes is not doing work; it is crashing on the same
+thing every time. The cause:</p>
+<pre>File "prod.py", line 449, in process_shard
+    items = read_shard(src, cfg)
+File "prod.py", line 105, in read_tar_shard
+    for m in tf:
+tarfile.ReadError: unexpected end of data</pre>
+<p>Some source archives are malformed. That alone should cost only those shards &mdash; but
+<code>process_shard()</code> was called <b>bare</b> in the main loop, so the exception escaped and
+<b>killed the worker</b>, forfeiting every shard still on its list. Work is split
+<code>shard_id % n_workers</code>, so each worker holds shards spread across the whole id range;
+dying on the first bad archive throws away all the good ones behind it. <b>The 271 were not 271
+broken files.</b></p>
+<p>A full scan of all 271 outstanding source archives settled it:</p>
+<div class=scroll><table>
+<tr><th>class</th><th class=n>count</th><th>evidence</th></tr>
+<tr><td>readable &mdash; just never reached</td><td class="n win">246</td><td>all 246 completed overnight once workers stopped dying: 2,500 + 246 = 2,746 exactly</td></tr>
+<tr><td>truncated archive</td><td class="n neg">17</td><td><code>ReadError</code>, on-disk size <b>equals the published manifest size to the byte</b></td></tr>
+<tr><td>empty archive</td><td class="n neg">8</td><td>10,240 bytes, zero utterance members</td></tr>
+<tr><td>partially downloaded / absent</td><td class=n>0</td><td>&mdash;</td></tr>
+</table></div>
+<p>So <b>91 % of the &ldquo;missing&rdquo; shards were collateral damage</b>, and the 25 stragglers
+are unusable source files. The truncation is <b>upstream</b>: our copies are exactly the length the
+repository advertises (e.g. <code>EN-train-00223.tar</code>, 981,556,864 bytes on both sides), so
+the archives themselves are malformed. The existing size-based guard structurally cannot see this.</p>
+
+<h3>Three fixes, because &ldquo;25 shards left forever&rdquo; is a runaway</h3>
+<p>The supervisor (&ldquo;keeper&rdquo;) counts any shard without a <code>.done</code> marker as
+outstanding, and <code>prod.py</code> deliberately refuses to write <code>.done</code> for a
+zero-item read &mdash; because that is <i>also</i> the signature of a reader bug. Left alone, these
+25 would be resubmitted every 3 hours until the rearm cap of 200, and the corpus would never be
+declared complete. It would look healthy the entire time.</p>
+<ol>
+<li><b>Per-shard exception guard</b> in <code>prod.py</code>'s main loop. One bad archive now costs
+one shard instead of a worker's whole list. Failed shards are recorded in the measurement JSON and
+<b>deliberately left without a <code>.done</code></b>, so a later re-download is self-healing.</li>
+<li><b>Salvage.</b> <code>read_tar_shard</code> now catches the read error mid-iteration and keeps
+every utterance read before the damage. Observed live: <code>SR-train-00046.tar</code> yielded 823
+recovered utterances, <code>MT-train-00072.tar</code> 751, that would otherwise have been lost.</li>
+<li><b><code>.skip</code> markers.</b> When a source is <i>provably</i> unusable &mdash; it raised a
+read error and nothing was salvageable, or it is a tiny file with no members &mdash; a JSON marker
+recording the reason is written, and the keeper treats it as not-outstanding. Crucially, a
+plausible-looking shard that reads zero items still gets <b>no</b> marker and stays outstanding, so
+a future reader bug is not masked.</li>
+<li><b>The supervisor could see the work but could not submit it.</b> The keeper's own log showed
+it finding the 25 outstanding shards, calling the submitter, and the submitter answering
+<i>&ldquo;nothing left &mdash; not submitting&rdquo;</i> &mdash; then re-arming to repeat the
+identical no-op two hours later. The submitter gated on an <b>estimate</b> of GPU-hours remaining,
+and the last few shards of any dataset necessarily estimate below the one-hour cutoff, so the gate
+is guaranteed to misfire precisely at the endgame, on every dataset, every time. It now gates on
+the actual <code>.done</code>/<code>.skip</code> markers and uses the estimate only to choose how
+many nodes to ask for.</li>
+</ol>
+<p><small>That is the same root cause as the KartoffelPhon bug in &sect;5: <b>an estimate was being
+used where ground truth was available.</b> Both failures were invisible in status output &mdash;
+the queue looked healthy, the keeper looked armed, and nothing was happening.</small></p>
+<p><small>That last distinction matters: an earlier bug in this project split filenames on the first
+dot, which silently produced 0 items for every evasnippets shard whose name contains
+<code>&quot;Monotone_vs._Expressive&quot;</code>. A blanket &ldquo;0 items &rarr; skip&rdquo; rule
+would have permanently buried it.</small></p>
+<div class=card>
+<p><b>Outcome (job 1409419).</b> The salvage did better than the scan predicted:
+<b>all 17 truncated archives yielded recoverable utterances</b> and earned real <code>.done</code>
+markers. Only the 8 genuinely empty ones &mdash; every one exactly 10,240 bytes with no members
+&mdash; were skip-marked, each with a JSON file recording shard, source, byte size and reason, so
+the exclusion is auditable rather than silent.</p>
+<p class=win style="font-size:1.05em">EuroSpeech: 2,763 done + 8 unusable = 2,771 / 2,771.
+Across all eight datasets the supervisor now reports <b>0 shards missing</b>, so the next wake-up
+writes <code>CORPUS_COMPLETE</code> and stops re-arming &mdash; the self-terminating steady state
+the design was aiming at, reached rather than merely intended.</p>
+</div>
+
+<h2>5. KartoffelPhon &mdash; the new dataset</h2>
+<p><code>MultiLlasa/Kartoffelphon-2.5M-de-ger</code>, CC-BY-4.0, German + English podcast speech.
+It arrives in <b>Arrow</b> format &mdash; 207 training + 11 test <code>.arrow</code> files, 100 GB
+&mdash; rather than the WebDataset tars everything else uses, so it needed a new reader.</p>
+<p><code>read_arrow_shard()</code> reads the on-disk Arrow <b>IPC stream</b> batch by batch, so peak
+memory is one record batch rather than a whole 450 MB shard, and yields the identical item
+dictionaries the tar reader yields. <b>Nothing downstream is a special case</b>: same five stages,
+same output tar layout, same 180-column parquet schema.</p>
+<p>One subtlety worth recording: <code>uid</code> is built from <b>position in the shard</b>
+(<code>tr00007_000123</code>), not from the audio <code>path</code> field. The path is an
+episode-plus-index name that is not guaranteed unique across 207 shards, and <code>uid</code> names
+the member inside the output tar &mdash; a collision would silently overwrite an utterance. The
+original path is preserved as <code>source_path</code>.</p>
+<div class=card>
+<p><b>Smoke test</b> (job 1408317, written to a scratch directory so it could not contaminate the
+corpus with <code>.done</code> markers): 128 utterances, all five stages, no errors. Audited with
+the same <code>auditfull.py</code>: caption 100 %, bursts 100 %, 40 emo 100 %, 57 vn_reg 100 %,
+57 vn_bucket 100 %, 4 qual 100 %, genuineness 100 %, MOSS 100 %, align 100 %, lang 100 %.</p>
+<p><b>Measured cost:</b> scorer 6.24 s + bursts 1.84 + MOSS 3.33 + align 3.17 = 14.58 GPU-seconds
+for 128 utterances = <b>114 ms/utterance = 31,600 utterances/GPU-hour</b>. Projected 2.6 M
+utterances &rarr; ~82 GPU-hours.</p>
+<p><b>Result: 218/218 shards, 2,616,656 utterances, 219 index parquets</b> &mdash; completed
+overnight while no agent was alive.</p>
+</div>
+
+<h3>A bug that would have made KartoffelPhon un-runnable by the supervisor</h3>
+<p>Submitting it the normal way printed <i>&ldquo;kartoffelphon: nothing left (0 shards done) &mdash;
+not submitting&rdquo;</i>. The work-sizing helper computes GPU-hours-remaining as
+<code>rate &times; bytes_remaining</code>, where <code>rate</code> is measured from that dataset's
+own completed shards &mdash; and a dataset with <b>no</b> completed shards has no measurable rate, so
+it returned zero, so both the submitter and the keeper skipped it. <b>A brand-new dataset could
+never be started automatically and would sit at zero forever while the keeper reported everything
+healthy.</b> Fixed by falling back to the corpus-wide measured rate across the 15.9 k shards that
+<i>do</i> have history, used only to size the first job.</p>
+
+<h2>6. Speaker identity for KartoffelPhon</h2>
+<p>KartoffelPhon ships no speaker identities. It has a <code>speaker</code> field, but it is a
+<b>within-episode diarisation label</b> (&ldquo;SPEAKER_00&rdquo; = the first voice heard in
+<i>this</i> episode), so <code>SPEAKER_00</code> in two different episodes is two different people.
+It is useless as a global identity &mdash; but it is excellent <b>evidence</b>, because two clips
+sharing an (episode, diarisation-label) pair really are the same person.</p>
+
+<h3>Model choice: the identity model, not the timbre model</h3>
+<p>Two candidate models exist and they are easy to confuse. Their own model cards settle it:</p>
+<div class=scroll><table>
+<tr><th>model</th><th>what its card says</th><th>use here</th></tr>
+<tr><td><code>Orange/Speaker-wavLM-<b>id</b></code></td><td>&ldquo;produces speaker embeddings for automatic speaker verification&rdquo;; VoxCeleb1-clean <b>EER 0.946 % at decision threshold 0.388</b></td><td class=win>chosen</td></tr>
+<tr><td><code>Orange/Speaker-wavLM-<b>tbr</b></code></td><td>&ldquo;globally represent the <b>timbral traits</b>&hellip; only the timbral traits are compared&rdquo;</td><td class=neg>rejected</td></tr>
+</table></div>
+<p><small><b>EER</b> (equal error rate) is the operating point where the rate of wrongly merging two
+different people equals the rate of wrongly splitting one person. Lower is better; 50 % is random.</small></p>
+<p>The timbre model scores <i>voice similarity</i>, so it will happily merge two different people
+who sound alike &mdash; exactly the failure mode that ruins a pseudo-speaker label. The identity
+model was used.</p>
+
+<h3>The loader was broken, and the fix is one line (but not the obvious one)</h3>
+<p>The first run crashed for every worker:</p>
+<pre>AttributeError: 'BatchedEmbeddings' object has no attribute 'all_tied_weights_keys'.
+Did you mean: '_tied_weights_keys'?
+  transformers/modeling_utils.py:4864 in _move_missing_keys_from_meta_to_device</pre>
+<p>The published model code predates a rename inside the <code>transformers</code> library. The
+tempting fix &mdash; downgrade <code>transformers</code> &mdash; would have been wrong twice over:
+other production jobs share this Python environment, and a package install has destroyed it here
+before. Instead, a <b>class attribute</b> <code>all_tied_weights_keys = {}</code> is declared on our
+subclass. It works because the error comes from <code>nn.Module.__getattr__</code>, which is only
+consulted <i>after</i> normal attribute lookup fails; a class attribute is found first, so
+<code>__getattr__</code> is never reached. The empty dict is also the <i>correct</i> value, not a
+placeholder: this model ties no weights, so the set really is empty and subtracting it is a no-op.</p>
+
+<h3>Batching this model correctly is not just about padding</h3>
+<p>The reference implementation embeds one clip at a time. Its forward pass computes
+<b>per-utterance mean/variance normalisation</b> and then <b>statistics pooling</b> (mean and
+standard deviation over time). Every one of those statistics is taken over the whole tensor &mdash;
+so zero-padding a batch does not merely waste compute, it <b>drags the mean toward zero and inflates
+the variance, changing the embedding</b>. Naive batching here is silently wrong, not just
+inefficient.</p>
+<p>The implementation therefore uses masked normalisation, an attention mask, and masked statistics
+pooling over each clip's true frame count. That claim is <b>checked, not asserted</b>: a verify mode
+embeds the same clips both ways and compares.</p>
+<div class=card><p><b>Verification (job 1409417):</b> 24 clips at a padding ratio of 2.16&times;
+(i.e. 116 % of the batch was padding &mdash; a deliberately hostile case):</p>
+<pre>[verify] n=24  pad_ratio=2.16  cos min=<b>0.999927</b>  mean=0.999974</pre>
+<p>The batched path reproduces the one-at-a-time path to within floating-point noise.</p></div>
+
+<h3>Sanity check: does it actually separate speakers?</h3>
+<p>A model that loads but emits garbage is worse than one that crashes, so before scaling to
+2.6 M clips the embeddings were checked against the diarisation ground truth &mdash; 8 speaker
+groups, 4 clips each, from a real shard:</p>
+<div class=scroll><table>
+<tr><th>pair type</th><th class=n>n</th><th class=n>mean cos</th><th class=n>min</th><th class=n>max</th></tr>
+<tr><td>same (episode, diarisation speaker)</td><td class=n>48</td><td class="n win">0.8393</td><td class=n>0.6971</td><td class=n>0.9406</td></tr>
+<tr><td>different speaker</td><td class=n>448</td><td class="n">0.1771</td><td class=n>&minus;0.1027</td><td class=n>0.7730</td></tr>
+</table></div>
+<p><b>Separation of 0.662 between the means</b> &mdash; unambiguous. The model works.</p>
+<div class=card><p><b>Throughput</b> (one GPU, 23,788 real utterances = 65 audio-hours, measured
+end-to-end including Arrow read, MP3 decode and the GPU forward):
+<span class=big>72,549</span> clips/GPU-hour at <span class=big>199&times;</span> realtime &mdash;
+i.e. one GPU-node-slice embeds 199 seconds of audio per second of wall clock. For all 2,616,656
+KartoffelPhon utterances that is <b>~36 GPU-hours &asymp; 1.1 hours on the 32 GPUs queued</b>.
+Embeddings are written as parquet keyed by <code>uid</code>, 250-dim float16 in a fixed-size list
+column, one file per shard &mdash; no loose files.</p>
+<p><b>But that number is a property of the node, not of the model.</b> The measurement breaks down
+as <b>1,073 s of CPU MP3 decoding against 104 s of GPU time</b> &mdash; the GPU is busy only 8.9 %
+of the wall, and this stage is <b>CPU-bound</b>, exactly like the audio-decode stage measured
+earlier in this project. The four workers &times; 16 decode threads already saturate the node's 64
+cores, so there is no free win from turning a knob; extracting more would mean fewer GPU workers
+per node with more decode threads each. Quoting 72,549 clips/GPU-hour as a <i>GPU</i> throughput
+would be misleading.</p>
+<p>One number does vindicate the design: <b>padding waste is 0.22 %</b>. Length bucketing means
+almost nothing pushed through the network is padding &mdash; the masked-statistics implementation
+is cheap as well as correct.</p></div>
+<p>One number in that table is already load-bearing for the threshold question: at the model card's
+VoxCeleb threshold of <b>0.388</b>, all 48 same-speaker pairs are correctly accepted, but
+<b>23 of 448 different-speaker pairs (5.1 %) are wrongly merged</b> &mdash; far worse than the
+0.946 % the card advertises. German podcast audio is not English celebrity interviews. <b>This is
+precisely why the threshold must be re-derived on this data rather than imported.</b></p>
+
+<h2>7. Choosing the pseudo-speaker threshold &mdash; method, not a number</h2>
+<p>Grouping 2.6 M embeddings into pseudo-speakers requires a similarity cutoff, and the cutoff is
+the whole ballgame: <b>too low merges distinct people into one pseudo-speaker; too high shatters one
+person across many.</b> Both damage a TTS corpus, in opposite ways. So no threshold is hard-coded;
+instead the evidence for choosing one is generated.</p>
+<h3>Why exact all-pairs is affordable here anyway</h3>
+<p>2.6 M points is 3.4&times;10<sup>12</sup> unordered pairs &mdash; the brief correctly calls that
+infeasible to materialise. But we do not need the full matrix, only each point's nearest
+neighbours, since anything below threshold contributes no edge. And because the embeddings are
+<b>L2-normalised, cosine similarity <i>is</i> the dot product</b>, so the entire neighbour search is
+one large matrix multiplication.</p>
+<p><b>Method chosen: exact top-k by chunked GPU matrix multiplication &mdash; not an approximate
+index.</b> 2.6 M &times; 250 in 16-bit floats is 1.3 GB, which sits entirely in a GH200's 95 GB of
+memory, so there is no approximation at all. Parameters: query block 16,384, key block 262,144,
+k = 32 neighbours per point, self-matches masked. Total work
+2.6M &times; 2.6M &times; 250 &times; 2 &asymp; 3.4&times;10<sup>15</sup> floating-point operations
+&mdash; minutes to a couple of hours on one GPU.</p>
+<p>An approximate nearest-neighbour index was rejected deliberately: it would add a <i>recall</i>
+parameter that itself needs defending, on top of the threshold we are already trying to justify.</p>
+<h3>What the sweep produces</h3>
+<p>Clusters are <b>connected components</b> under single linkage (if A matches B and B matches C,
+all three are one speaker). Single linkage is the transparent choice and also the <i>pessimistic</i>
+one &mdash; it is the most merge-happy rule, so a threshold that is safe under it is safe under any
+stricter rule. For each candidate threshold from 0.30 to 0.85 the sweep reports: <b>cluster count,
+singleton count, largest cluster, cluster-size percentiles, the false-merge and false-split rates
+measured against the diarisation ground truth, and example pairs straddling that threshold</b> for a
+human to eyeball.</p>
+<div class=card>
+<p><b>Status:</b> the embedding job (1409418, 8 nodes / 32 GPUs) and the sweep (1409431, chained to
+run automatically after it) are queued and will complete without supervision. <b>The sweep numbers
+are not in this report</b> &mdash; they will be written to
+<code>$OUT/speaker/threshold_sweep_full.json</code> and a 400 k-subsample safety net to
+<code>threshold_sweep_400k.json</code>, so a walltime overrun still leaves a complete evidence set.</p>
+<p><b>Provisional recommendation, from the evidence that <i>does</i> exist</b> (the 8-group ground
+truth above): the VoxCeleb threshold of 0.388 is <b>too permissive for this corpus</b> at 5.1 %
+false merges. The same-speaker distribution has its minimum at 0.697 and the different-speaker
+distribution its maximum at 0.773, so the honest crossover lies near <b>0.70&ndash;0.75</b>, and a
+threshold in that band should be preferred pending the full sweep. Given that merging two people is
+the more damaging error for speaker-conditioned TTS, and that single linkage compounds merges
+transitively, <b>err toward the higher end</b>. This is a provisional read on 496 pairs from one
+shard &mdash; treat the queued sweep, which measures ~200,000 positive and 200,000 negative pairs
+across the whole corpus, as the authority.</p>
+</div>
+
+<h2>8. Reproducing any number in this report</h2>
+<div class=scroll><table>
+<tr><th>claim</th><th>script</th><th>output</th></tr>
+<tr><td>corpus totals, audio-hours</td><td><code>code/</code> ad-hoc parquet footer scan</td><td><code>meas/corpus_totals.json</code></td></tr>
+<tr><td>per-dataset annotation completeness</td><td><code>code/auditfull.py</code></td><td><code>meas/audit_full2.json</code></td></tr>
+<tr><td>EuroSpeech source-archive classification</td><td>scratch scan (truncated / empty / readable)</td><td>inline in &sect;4</td></tr>
+<tr><td>evasnippets language backfill</td><td><code>code/langfix.py</code> + <code>langfix.sbatch</code></td><td><code>logs/langfix_1409348_w*.log</code></td></tr>
+<tr><td>KartoffelPhon per-stage cost</td><td><code>code/prod.py</code> smoke run 1408317</td><td>worker <code>meas/</code> JSON</td></tr>
+<tr><td>batched-vs-reference embedding equality</td><td><code>code/spkemb.py --verify</code></td><td><code>logs/spkemb_1409417_*.out</code></td></tr>
+<tr><td>threshold sweep</td><td><code>code/spksweep.py</code> + <code>spksweep.sbatch</code></td><td><code>$OUT/speaker/threshold_sweep_*.json</code></td></tr>
+</table></div>
+<p>The running narrative, including every dead end, is in
+<code>$OUT/WORKLOG.md</code> and <code>$NB/tokcorpus/WORKLOG.md</code>.</p>
+
+<h2>9. What would need attention next</h2>
+<ol>
+<li><b>Non-Latin alignment.</b> Install <code>uroman</code> and re-run the align stage. Extrapolating
+each dataset's sampled <code>nonlatin</code> rate to its true row count gives an estimated
+<b>5,259,827 utterances (4.0 % of the corpus)</b> that have audio, text and every other annotation
+but no word timings &mdash; commonvoice 2.49 M, eurospeech 2.37 M, podcast 0.39 M. This is the single
+largest remaining gap and it is an environment fix, not a code fix.</li>
+<li><b>snippets' language.</b> Needs a language-ID stage; 2.6 M utterances currently have no
+language label and no way to recover one from metadata.</li>
+<li><b>The 25 unusable EuroSpeech archives.</b> Salvage recovers partial content from the truncated
+ones; a fresh re-download would be needed to know whether the repository has since republished
+them. They are 0.15 % of the corpus.</li>
+<li><b>Vocal burst class distribution</b> was flagged as suspicious during the survey (a large share
+of &ldquo;Low Mumble&rdquo; and &ldquo;Ahem&rdquo;, consistent with the locator firing on low-energy
+speech). The columns are populated everywhere, but their <i>quality</i> has not been validated by a
+human listen. That is a labelling-quality question this audit does not answer.</li>
+</ol>
+<p><small>Report written 2026-08-19. Corpus state at time of writing: 16,438 shards,
+130,795,431 utterances, EuroSpeech finishing its last salvageable shards, speaker embeddings and
+threshold sweep queued and self-driving.</small></p>
